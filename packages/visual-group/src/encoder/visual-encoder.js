@@ -25,15 +25,6 @@ export default class VisualEncoder {
      *
      * @memberof VisualEncoder
      */
-    setCommonDomain () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
-    /**
-     *
-     *
-     * @memberof VisualEncoder
-     */
     getLayerConfig () {
         throw new Error(ERROR_MSG.INTERFACE_IMPL);
     }

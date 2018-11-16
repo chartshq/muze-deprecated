@@ -93,17 +93,6 @@ export default class PolarEncoder extends VisualEncoder {
      * @return
      * @memberof PolarEncoder
      */
-    setCommonDomain () {
-        // No domain to be set
-        return this;
-    }
-
-    /**
-     *
-     *
-     * @return
-     * @memberof PolarEncoder
-     */
     static type () {
         return POLAR;
     }
