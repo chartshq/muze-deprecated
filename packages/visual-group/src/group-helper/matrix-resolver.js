@@ -496,8 +496,9 @@ export default class MatrixResolver {
             size
         };
         const facetFields = [...rowFacets.map(e => e.toString()), ...colFacets.map(e => e.toString())];
+        encoders.retinalEncoder.layers(encoders.planarEncoder.layers());
         const retContext = {
-            domains: encoders.simpleEncoder.getRetinalFieldsDomain(datamodel, encoding, facetFields, groupBy),
+            domains: encoders.retinalEncoder.getFieldsDomain(datamodel, encoding, facetFields, groupBy),
             axes: this.axes(),
             encoding
         };

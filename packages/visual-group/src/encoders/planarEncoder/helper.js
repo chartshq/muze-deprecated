@@ -1,9 +1,9 @@
 import { mergeRecursive } from 'muze-utils';
 import { AxisOrientation } from '@chartshq/muze-axis';
-import { scaleMaps } from '../enums/scale-maps';
-import { getAxisType, getAxisKey } from '../group-helper';
-import { dataTypeScaleMap } from '../data-type-scale-map';
-import { CATEGORICAL, TEMPORAL, BAR, LINE, POINT, BOTH, Y } from '../enums/constants';
+import { scaleMaps } from '../../enums/scale-maps';
+import { getAxisKey } from '../../group-helper';
+import { dataTypeScaleMap } from '../../data-type-scale-map';
+import { CATEGORICAL, TEMPORAL, BAR, LINE, POINT, BOTH, Y } from '../../enums/constants';
 
 /**
  *
@@ -153,24 +153,6 @@ export const getDefaultMark = (colFieldType, rowFieldType) => {
     }
 
     return mark;
-};
-
-/**
- *
- *
- * @param {*} axesCreators
- * @param {*} [fieldInfo=[]]
- * @return
- */
-export const createRetinalAxis = (axesCreators, fieldProps = {}) => {
-    const { axisType, fieldsConfig } = axesCreators;
-    const field = fieldProps.field;
-    const axis = [];
-    const Cls = scaleMaps[axisType];
-
-    fieldProps.type = fieldProps.type ? fieldProps.type : getAxisType(fieldsConfig, field || null);
-    axis.push(new Cls(fieldProps));
-    return axis;
 };
 
 /**

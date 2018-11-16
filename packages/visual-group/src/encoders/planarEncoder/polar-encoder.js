@@ -1,7 +1,7 @@
 import { layerFactory } from '@chartshq/visual-layer';
 import { mergeRecursive } from 'muze-utils';
-import VisualEncoder from './visual-encoder';
-import { RADIUS, ANGLE, SIZE, MEASURE, ARC, POLAR, COLOR } from '../enums/constants';
+import PlanarEncoder from './planar-encoder';
+import { RADIUS, ANGLE, SIZE, MEASURE, ARC, POLAR, COLOR } from '../../enums/constants';
 /**
  *
  *
@@ -9,7 +9,17 @@ import { RADIUS, ANGLE, SIZE, MEASURE, ARC, POLAR, COLOR } from '../enums/consta
  * @class PolarEncoder
  * @extends {VisualEncoder}
  */
-export default class PolarEncoder extends VisualEncoder {
+export default class PolarEncoder extends PlanarEncoder {
+
+    /**
+     *
+     *
+     * @return
+     * @memberof PolarEncoder
+     */
+    static type () {
+        return POLAR;
+    }
 
     /**
      *
@@ -90,32 +100,14 @@ export default class PolarEncoder extends VisualEncoder {
     /**
      *
      *
-     * @return
-     * @memberof PolarEncoder
-     */
-    static type () {
-        return POLAR;
-    }
-
-    layers (...layers) {
-        if (layers.length) {
-            this._layers = layers[0];
-            return this;
-        }
-        return this._layers;
-    }
-
-    /**
-     *
-     *
      * @param {*} datamodel
      * @param {*} config
      * @memberof PolarEncoder
      */
-    fieldSanitizer (datamodel, config) {
+    sanitizeFields (datamodel, config) {
         let sanitizedRows = [[], []];
         let sanitizedColumns = [[], []];
-        const fields = super.fieldSanitizer(datamodel, config);
+        const fields = super.sanitizeFields(datamodel, config);
         const {
             layers
         } = config;
@@ -179,6 +171,7 @@ export default class PolarEncoder extends VisualEncoder {
         }
         return domains;
     }
+
     /**
      *
      *
@@ -236,3 +229,4 @@ export default class PolarEncoder extends VisualEncoder {
         return serializedLayers;
     }
 }
+

@@ -1,7 +1,7 @@
 import { Store, dataSelect, FieldType } from 'muze-utils';
 import { DATA_UPDATE_COUNTER } from '../enums/defaults';
 import { Variable } from '../variable';
-import { PolarEncoder, CartesianEncoder } from '../encoder';
+import { planarEncoderMap, retinalEncoderMap } from '../enums/encoder-maps';
 import {
     DIMENSION,
     MEASURE,
@@ -252,14 +252,18 @@ export const mutateAxesFromMap = (cacheMaps, axes) => {
  * @param {*} layers
  * @return
  */
-export const getEncoder = (layers) => {
-    let encoder = new CartesianEncoder();
+export const getEncoders = (layers) => {
+    let encoderType = 'cartesian';
+    //  new CartesianEncoder();
 
     if (layers) {
         // Figuring out the kind of layers the group will have
-        encoder = layers.every(e => e.mark === 'arc') ? new PolarEncoder() : encoder;
+        encoderType = layers.every(e => e.mark === 'arc') ? 'polar' : encoderType;
     }
-    return encoder;
+    return {
+        planarEncoder: new planarEncoderMap[encoderType](),
+        retinalEncoder: new retinalEncoderMap[encoderType]()
+    };
 };
 
 /**
@@ -317,7 +321,7 @@ export const setFacetsAndProjections = (context, fieldInfo, encoder) => {
         fields,
         type
     } = fieldInfo;
-    const { facets, projections } = encoder.simpleEncoder.getFacetsAndProjections(fields, type);
+    const { facets, projections } = encoder.planarEncoder.getFacetsAndProjections(fields, type);
 
     context.facets({ [`${type}Facets`]: facets });
     context.projections({ [`${type}Projections`]: projections });

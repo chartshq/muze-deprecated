@@ -1,31 +1,31 @@
 import { ERROR_MSG, mergeRecursive } from 'muze-utils';
-import { transformFields } from './field-sanitizer';
-import { getHeaderAxisFrom } from '../group-helper/group-utils';
-import { ROW, COLUMN } from '../enums/constants';
+import { transformFields } from '../field-sanitizer';
+import VisualEncoder from '../visual-encoder';
+import { getHeaderAxisFrom } from '../../group-helper/group-utils';
+import { ROW, COLUMN } from '../../enums/constants';
 
 /**
  *
  *
  * @export
- * @class VisualEncoder
+ * @class PlanarEncoder
  */
-export default class VisualEncoder {
+export default class PlanarEncoder extends VisualEncoder {
 
-    /**
-     *
-     *
-     * @memberof VisualEncoder
-     */
-    createAxis () {
+    serializeLayerConfig () {
         throw new Error(ERROR_MSG.INTERFACE_IMPL);
     }
 
-    /**
-     *
-     *
-     * @memberof VisualEncoder
-     */
-    getLayerConfig () {
+    sanitizeFields (datamodel, config) {
+        this.fieldInfo(transformFields(datamodel, config));
+        return this.fieldInfo();
+    }
+
+    getRetinalFieldsDomain () {
+        throw new Error(ERROR_MSG.INTERFACE_IMPL);
+    }
+
+    getFacetsAndProjections () {
         throw new Error(ERROR_MSG.INTERFACE_IMPL);
     }
 
@@ -37,26 +37,6 @@ export default class VisualEncoder {
         return this._fieldInfo;
     }
 
-    /**
-     *
-     *
-     * @param {*} datamodel
-     * @param {*} config
-     * @return
-     * @memberof VisualEncoder
-     */
-    fieldSanitizer (datamodel, config) {
-        this.fieldInfo(transformFields(datamodel, config));
-        return this.fieldInfo();
-    }
-
-    /**
-     *
-     *
-     * @param {*} params
-     * @return
-     * @memberof VisualEncoder
-     */
     axisFrom (...params) {
         if (params.length) {
             this._axisFrom = params[0];
@@ -65,13 +45,6 @@ export default class VisualEncoder {
         return this._axisFrom;
     }
 
-    /**
-     *
-     *
-     * @param {*} params
-     * @return
-     * @memberof VisualEncoder
-     */
     headerFrom (...params) {
         if (params.length) {
             this._headerFrom = params[0];
@@ -80,14 +53,7 @@ export default class VisualEncoder {
         return this.__headerFrom;
     }
 
-    /**
-     *
-     *
-     * @param {*} axisFrom
-     * @return
-     * @memberof CartesianEncoder
-     */
-    setAxisAndHeaders (axisFrom = {}, fields) {
+    setAxesAndHeaders (fields, axisFrom = {}) {
         const [rowHeader, rowAxis] = getHeaderAxisFrom(ROW, fields.rows, axisFrom);
         const [colHeader, colAxis] = getHeaderAxisFrom(COLUMN, fields.columns, axisFrom);
 
@@ -101,4 +67,5 @@ export default class VisualEncoder {
         });
         return this;
     }
+
 }

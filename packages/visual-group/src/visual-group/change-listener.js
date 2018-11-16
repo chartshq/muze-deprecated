@@ -1,6 +1,6 @@
-import { RetinalEncoder } from '../encoder';
+// import { RetinalEncoder } from '../encoder';
 import { DATA_UPDATE_COUNTER } from '../enums/defaults';
-import { getEncoder, getBorders } from '../group-helper';
+import { getEncoders, getBorders } from '../group-helper';
 import ValueMatrix from './value-matrix';
 import localOptions from './local-options';
 
@@ -70,16 +70,17 @@ export const setupChangeListeners = (context) => {
 
             matrixConfig = Object.assign(matrixConfig, retinalConfig);
             // Create the encoders for the group
-            const encoders = {};
-            encoders.retinalEncoder = new RetinalEncoder();
-            encoders.simpleEncoder = getEncoder(layers[1]);
+            // const encoders = {};
+            const encoders = getEncoders(layers[1]);
+            // encoders.retinalEncoder = new RetinalEncoder();
+            // encoders.planarEncoder = getEncoder(layers[1]);
 
             // Set the group type
-            context.groupType(encoders.simpleEncoder.constructor.type());
+            context.groupType(encoders.planarEncoder.constructor.type());
 
             // Get sanitized fields as instances of the Vars Class
-            const fields = encoders.simpleEncoder.fieldSanitizer(datamodel, matrixConfig);
-            encoders.simpleEncoder.setAxisAndHeaders(config[1] ? config[1].axisFrom : {}, fields);
+            const fields = encoders.planarEncoder.sanitizeFields(datamodel, matrixConfig);
+            encoders.planarEncoder.setAxesAndHeaders(fields, config[1] ? config[1].axisFrom : {});
             // Setting layers for the code
             layers[1] && resolver.layerConfig(layers[1]);
             // Set the row and column axes
@@ -108,7 +109,7 @@ export const setupChangeListeners = (context) => {
 
             context._composition.axes = resolver.axes();
             context.metaData({
-                border: getBorders(placeholderInfo, encoders.simpleEncoder)
+                border: getBorders(placeholderInfo, encoders.planarEncoder)
             });
         }
         return context;

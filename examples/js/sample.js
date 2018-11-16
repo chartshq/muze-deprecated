@@ -77,6 +77,9 @@ d3.json('../data/cars.json', (data) => {
     .rows(['Cylinders', 'Origin'])
     .columns(['Miles_per_Gallon', 'Horsepower'])
     .data(rootData)
+    .layers([{
+        mark: 'arc'
+    }])
     .color('Acceleration')
     .width(600)
     .height(500)

@@ -1,6 +1,6 @@
-import { createRetinalAxis } from './encoder-helper';
-import { COLOR, SHAPE, SIZE } from '../enums/constants';
-import VisualEncoder from './visual-encoder';
+import { createRetinalAxis } from './helper';
+import { COLOR, SHAPE, SIZE } from '../../enums/constants';
+import VisualEncoder from '../visual-encoder';
 
 /**
  *
@@ -47,28 +47,29 @@ export default class RetinalEncoder extends VisualEncoder {
      * @return
      * @memberof RetinalEncoder
      */
-    getLayerConfig (encodingConfigs, userLayerConfig) {
+    getLayerConfig (fields, userLayerConfig) {
         const layerConfig = [];
         userLayerConfig.forEach((e) => {
             const config = e;
             [COLOR, SHAPE, SIZE].forEach((axis) => {
-                if (encodingConfigs[axis] && encodingConfigs[axis].field) {
+                if (fields[axis] && fields[axis].field) {
                     const def = config.def;
                     if (config.def instanceof Array) {
                         def.forEach((conf) => {
                             conf.encoding = conf.encoding || {};
                             !conf.encoding[axis] && (conf.encoding[axis] = {});
-                            conf.encoding[axis].field = encodingConfigs[axis].field;
+                            conf.encoding[axis].field = fields[axis].field;
                         });
                     } else {
                         def.encoding = def.encoding || {};
                         !def.encoding[axis] && (def.encoding[axis] = {});
-                        def.encoding[axis].field = encodingConfigs[axis].field;
+                        def.encoding[axis].field = fields[axis].field;
                     }
                 }
             });
             layerConfig.push(config);
         });
+        this.layers(layerConfig);
         return layerConfig;
     }
 
@@ -95,6 +96,7 @@ export default class RetinalEncoder extends VisualEncoder {
                 }
             }
         });
-        return axes;
+
+        return this;
     }
 }

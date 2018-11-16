@@ -1,10 +1,9 @@
 import { layerFactory } from '@chartshq/visual-layer';
 import { mergeRecursive } from 'muze-utils';
-import { generateAxisFromMap, getDefaultMark, getIndex, getLayerConfFromFields } from './encoder-helper';
-import { retriveDomainFromData } from '../group-helper';
-
-import { ROW, COLUMN, COL, LEFT, TOP, CARTESIAN, MEASURE, BOTH, X, Y } from '../enums/constants';
-import VisualEncoder from './visual-encoder';
+import { generateAxisFromMap, getDefaultMark, getIndex, getLayerConfFromFields } from './helper';
+import { retriveDomainFromData } from '../../group-helper';
+import { ROW, COLUMN, COL, LEFT, TOP, CARTESIAN, MEASURE, BOTH, X, Y } from '../../enums/constants';
+import PlanarEncoder from './planar-encoder';
 
 /**
  *
@@ -13,7 +12,7 @@ import VisualEncoder from './visual-encoder';
  * @class CartesianEncoder
  * @extends {VisualEncoder}
  */
-export default class CartesianEncoder extends VisualEncoder {
+export default class CartesianEncoder extends PlanarEncoder {
 
     /**
      *
@@ -158,18 +157,6 @@ export default class CartesianEncoder extends VisualEncoder {
      *
      *
      * @param {*} datamodel
-     * @param {*} config
-     * @return
-     * @memberof CartesianEncoder
-     */
-    fieldSanitizer (datamodel, config) {
-        return super.fieldSanitizer(datamodel, config);
-    }
-
-    /**
-     *
-     *
-     * @param {*} datamodel
      * @return
      * @memberof CartesianEncoder
      */
@@ -197,7 +184,6 @@ export default class CartesianEncoder extends VisualEncoder {
      */
     serializeLayerConfig (layerArray) {
         const serializedLayers = [];
-        // let currentLayerIndex = 0;
         layerArray.length && layerArray.forEach((layer, i) => {
             const def = layerFactory.sanitizeLayerConfig(layer);
             def.order = i;
@@ -267,6 +253,7 @@ export default class CartesianEncoder extends VisualEncoder {
                 layerConfig.push(...configs);
             });
         });
+        this.layers(layerConfig);
         return layerConfig;
     }
 }

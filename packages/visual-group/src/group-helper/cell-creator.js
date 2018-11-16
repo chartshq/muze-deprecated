@@ -247,8 +247,8 @@ const generatePlaceholders = (context, cells, labelManager) => {
         rowKeys,
         columnKeys
     } = valuesMatrix;
-    const takeAxisFrom = encoders.simpleEncoder._axisFrom;
-    const takeHeaderFrom = encoders.simpleEncoder._headerFrom;
+    const takeAxisFrom = encoders.planarEncoder._axisFrom;
+    const takeHeaderFrom = encoders.planarEncoder._headerFrom;
 
     selectionObj = selection || {};
 
@@ -498,10 +498,10 @@ export const computeMatrices = (context, config) => {
 
     const valueCellContext = {
         config: globalConfig,
-        suppliedLayers: encoders.simpleEncoder.serializeLayerConfig(resolver.layerConfig()),
+        suppliedLayers: encoders.planarEncoder.serializeLayerConfig(resolver.layerConfig()),
         resolver,
         cell: cells.GeomCell,
-        encoder: encoders.simpleEncoder,
+        encoder: encoders.planarEncoder,
         newCacheMap,
         detailFields: config.detail
     };
