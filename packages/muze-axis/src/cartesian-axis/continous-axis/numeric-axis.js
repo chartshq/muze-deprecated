@@ -1,5 +1,5 @@
 import ContinousAxis from './continous-axis';
-import { BOTTOM, TOP, LEFT, RIGHT } from '../../enums/axis-orientation';
+import { BOTTOM, TOP } from '../../enums/axis-orientation';
 import { LINEAR, LOG, POW } from '../../enums/scale-type';
 import { LogInterpolator, PowInterpolator, LinearInterpolator } from './interpolators';
 import { DOMAIN } from '../../enums/constants';

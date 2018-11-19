@@ -3,18 +3,19 @@
  * This file declares a class that is used to render an axis to add  meaning to
  * plots.
  */
-import { getUniqueId, generateGetterSetters, rgbToHsv } from 'muze-utils';
-import { createScale, getScheme, getSchemeType } from '../scale-creator';
-import { CONTINOUS, DISCRETE, COLOR } from '../enums/constants';
+import { generateGetterSetters, rgbToHsv } from 'muze-utils';
+import { createScale, getScheme, getSchemeType } from '../../scale-creator';
+import { CONTINOUS, DISCRETE, COLOR } from '../../enums/constants';
 import { strategyGetter } from './color-strategy';
 import { DEFAULT_CONFIG } from './defaults';
 import { PROPS, getHslString } from './props';
+import RetinalAxis from '../retinal-axis';
 
 /**
 * This class is used to instantiate a SimpleAxis.
 * @class SimpleAxis
 */
-export default class ColorAxis {
+export default class ColorAxis extends RetinalAxis {
 
     /**
     * Creates an instance of SimpleAxis.
@@ -25,6 +26,7 @@ export default class ColorAxis {
     * @memberof ColorAxis
     */
     constructor (config) {
+        super();
         generateGetterSetters(this, PROPS);
         this.config(config);
 
@@ -33,10 +35,8 @@ export default class ColorAxis {
 
         this._schemeType = getSchemeType(this._config.range);
 
-        this._colorStrategy = this.setColorStrategy(this._domainType, this._rangeType, this._schemeType);
-        this._scale = this.createScale(this._colorStrategy);
-
-        this._id = getUniqueId();
+        this.setStrategy(this._domainType, this._rangeType, this._schemeType);
+        this._scale = this.createScale();
 
         this.updateDomain(config.domain);
     }
@@ -70,13 +70,13 @@ export default class ColorAxis {
      * @returns
      * @memberof ColorAxis
      */
-    createScale (colorStrategy) {
+    createScale () {
         const { range } = this.config();
         if (range && typeof (range) === 'string') {
             return getScheme(range);
         }
         return createScale({
-            type: colorStrategy.scale,
+            type: this.strategy().scale,
             range
         });
     }
@@ -90,10 +90,11 @@ export default class ColorAxis {
      * @returns
      * @memberof ColorAxis
      */
-    setColorStrategy (domainType, rangeType, schemeType) {
+    setStrategy (domainType, rangeType, schemeType) {
         const { stops } = this.config();
 
-        return strategyGetter(domainType, rangeType, schemeType, stops);
+        this.strategy(strategyGetter(domainType, rangeType, schemeType, stops));
+        return this;
     }
 
     /**
@@ -106,6 +107,7 @@ export default class ColorAxis {
     getHslString (hslColorArray) {
         return getHslString(hslColorArray);
     }
+
     /**
      *
      *
@@ -116,6 +118,7 @@ export default class ColorAxis {
     getColor (domainVal) {
         return this.getHslString(this.getRawColor(domainVal));
     }
+
     /**
      *
      *
@@ -160,41 +163,16 @@ export default class ColorAxis {
         return this;
     }
 
-    /**
-     * This method returns an object that can be used to
-     * reconstruct this instance.
-     *
-     * @return {Object} the serializable props of axis
-     * @memberof ShapeAxis
-     */
-    serialize () {
-        return {
-            type: this.constructor.type(),
-            scale: this.scale(),
-            domain: this.domain(),
-            config: this.config()
-        };
-    }
-
-    transformColor (color, transformationArr) {
-        const h = color[0] * 360;
-        const s = color[1] * 100;
-        const l = color[2] * 100;
-        const a = color[3] || 1;
-        const newH = h + transformationArr[0];
-        const newS = s + transformationArr[1];
-        const newL = l + transformationArr[2];
-        const newA = a + transformationArr[3] || 0;
+    transformColor (colorArray, transformationArray) {
+        const h = colorArray[0] * 360;
+        const s = colorArray[1] * 100;
+        const l = colorArray[2] * 100;
+        const a = colorArray[3] || 1;
+        const newH = h + transformationArray[0];
+        const newS = s + transformationArray[1];
+        const newL = l + transformationArray[2];
+        const newA = a + transformationArray[3] || 0;
 
         return { color: `hsla(${newH},${newS}%,${newL}%,${newA})`, hsla: [newH / 360, newS / 100, newL / 100, newA] };
     }
-
-    /**
-     * Returns the id of the axis.
-     * @return {string} Unique identifier of the axis.
-     */
-    id () {
-        return this._id;
-    }
-
 }

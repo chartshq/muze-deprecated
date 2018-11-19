@@ -7,8 +7,6 @@ import * as ScaleType from './enums/scale-type';
 import './styles.scss';
 
 export { SimpleAxis, ContinousAxis, NumericAxis, BandAxis, TimeAxis } from './cartesian-axis';
-export { ColorAxis } from './color-axis';
-export { SizeAxis } from './size-axis';
-export { ShapeAxis } from './shape-axis';
+export { RetinalAxis, ColorAxis, SizeAxis, ShapeAxis } from './retinal-axis';
 export { dataTypeScaleMap } from './data-type-scale-map';
 export { AxisOrientation, ScaleType };

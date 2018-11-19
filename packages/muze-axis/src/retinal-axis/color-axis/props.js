@@ -1,7 +1,7 @@
 import { mergeRecursive, detectColor, hexToHsv, rgbToHsv } from 'muze-utils';
 import { x11Colors } from './color-maps';
 import { palette, DEFAULT_GRADIENT_COLOR } from './defaults';
-import { LINEAR, RGB, HEX, HSL, HSLA } from '../enums/constants';
+import { LINEAR, RGB, HEX, HSL, HSLA } from '../../enums/constants';
 
 export const getHslString = hslArr => `hsla(${hslArr[0] * 360},${hslArr[1] * 100}%,${hslArr[2] * 100}%,\
 ${hslArr[3] || 1})`;
@@ -54,5 +54,6 @@ export const PROPS = {
     },
     domain: {},
     scale: {},
+    strategy: {},
     uniqueValues: {}
 };

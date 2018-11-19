@@ -1,6 +1,6 @@
 import { numberInterpolator, piecewiseInterpolator } from 'muze-utils';
-import { CONTINOUS, DISCRETE } from '../enums/constants';
-import { LINEAR, THRESHOLD } from '../enums/scale-type';
+import { CONTINOUS, DISCRETE } from '../../enums/constants';
+import { LINEAR, THRESHOLD } from '../../enums/scale-type';
 
 /**
  *

@@ -3,18 +3,19 @@
  * This file declares a class that is used to render an axis to add  meaning to
  * plots.
  */
-import { getUniqueId, generateGetterSetters } from 'muze-utils';
-import { createScale } from '../scale-creator';
+import { generateGetterSetters } from 'muze-utils';
+import { createScale } from '../../scale-creator';
 import { DEFAULT_CONFIG } from './defaults';
-import { SIZE, CONTINOUS, DISCRETE } from '../enums/constants';
+import { SIZE, CONTINOUS, DISCRETE } from '../../enums/constants';
 import { strategyGetter } from './size-strategy';
 import { PROPS } from './props';
+import RetinalAxis from '../retinal-axis';
 
 /**
 * This class is used to instantiate a SimpleAxis.
 * @class SimpleAxis
 */
-export default class SizeAxis {
+export default class SizeAxis extends RetinalAxis {
 
     /**
      * Creates an instance of SimpleAxis.
@@ -22,15 +23,15 @@ export default class SizeAxis {
      * @memberof SizeAxis
      */
     constructor (config) {
+        super();
         generateGetterSetters(this, PROPS);
 
-        this._id = getUniqueId();
         this._config = Object.assign({}, this.constructor.defaultConfig(), config);
         // @todo: Will use configuration override using scale decorator
         this._domainType = this._config.type === 'linear' ? CONTINOUS : DISCRETE;
         this._rangeType = CONTINOUS;
 
-        this._sizeStrategy = this.setStrategy(this._domainType, this._rangeType);
+        this.setStrategy(this._domainType, this._rangeType);
         this._scale = this.createScale(this._sizeStrategy);
         this._range = this._config.range;
 
@@ -47,7 +48,7 @@ export default class SizeAxis {
      * @memberof ColorAxis
      */
     setStrategy (domainType, rangeType) {
-        return strategyGetter(domainType, rangeType);
+        this.strategy(strategyGetter(domainType, rangeType));
     }
 
     /**
@@ -56,12 +57,12 @@ export default class SizeAxis {
      * @returns
      * @memberof SizeAxis
      */
-    createScale (strategy) {
+    createScale () {
         const {
             range
         } = this.config();
         return createScale({
-            type: strategy.scale,
+            type: this.strategy().scale,
             range
         });
     }
@@ -129,30 +130,5 @@ export default class SizeAxis {
             this.scale().domain(domainInfo.scaleDomain || this.domain());
         }
         return this;
-    }
-
-    /**
-     * This method returns an object that can be used to
-     * reconstruct this instance.
-     *
-     * @return {Object} the serializable props of axis
-     * @memberof ShapeAxis
-     */
-    serialize () {
-        return {
-            type: this.constructor.type(),
-            scale: this.scale(),
-            domain: this.domain(),
-            range: this.range(),
-            config: this.config()
-        };
-    }
-
-    /**
-     * Returns the id of the axis.
-     * @return {string} Unique identifier of the axis.
-     */
-    id () {
-        return this._id;
     }
 }

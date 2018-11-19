@@ -1,6 +1,6 @@
 import {
     LINEAR
-} from '../enums/constants';
+} from '../../enums/constants';
 /**
  * Set of default colors
  */

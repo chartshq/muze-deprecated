@@ -8,5 +8,6 @@ export const PROPS = {
     },
     range: {},
     scale: {},
+    strategy: {},
     uniqueValues: {}
 };

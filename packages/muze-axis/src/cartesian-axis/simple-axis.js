@@ -13,9 +13,7 @@ import { defaultConfig } from '../cartesian-axis/default-config';
 import { renderAxis } from '../axis-renderer';
 import {
     computeAxisDimensions,
-    setOffset,
-    registerChangeListeners,
-    calculateContinousSpace
+    registerChangeListeners
 } from './common-helper';
 import { PROPS } from '../cartesian-axis/props';
 
@@ -101,14 +99,12 @@ export default class SimpleAxis {
     }
 
     getMinTickDifference () {
-        
-    }
 
+    }
 
     setFixedBaseline () {
         throw new Error(ERROR_MSG.INTERFACE_IMPL);
     }
-
 
     /**
      *

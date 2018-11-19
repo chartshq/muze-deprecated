@@ -3,18 +3,19 @@
  * This file declares a class that is used to render an axis to add  meaning to
  * plots.
  */
-import { getUniqueId, getSymbol, generateGetterSetters, mergeRecursive } from 'muze-utils';
-import { createScale } from '../scale-creator';
+import { getSymbol, generateGetterSetters, mergeRecursive } from 'muze-utils';
+import { createScale } from '../../scale-creator';
 import { DEFAULT_CONFIG } from './defaults';
-import { SHAPE } from '../enums/constants';
+import { SHAPE } from '../../enums/constants';
 import { shapeGenerator } from './helper';
 import { PROPS } from './props';
+import RetinalAxis from '../retinal-axis';
 
 /**
 * This class is used to instantiate a SimpleAxis.
 * @class SimpleAxis
 */
-export default class ShapeAxis {
+export default class ShapeAxis extends RetinalAxis {
     /**
     * Creates an instance of SimpleAxis.
     * @param {Object} params input parameters.
@@ -22,17 +23,21 @@ export default class ShapeAxis {
     * @memberof ShapeAxis
     */
     constructor (config) {
+        super();
         generateGetterSetters(this, PROPS);
 
-        this._id = getUniqueId();
         this._config = Object.assign({}, this.constructor.defaultConfig());
         this._config = mergeRecursive(this._config, config);
 
-        this._scale = createScale({
+        this._scale = this.createScale();
+        this.updateDomain(config.domain);
+    }
+
+    createScale () {
+        return createScale({
             type: 'ordinal',
             range: this._config.range
         });
-        this.updateDomain(config.domain);
     }
 
      /**
@@ -60,20 +65,20 @@ export default class ShapeAxis {
     /**
      *
      *
-     * @param {*} value
+     * @param {*} domainVal
      * @returns
      * @memberof ShapeAxis
      */
-    getShape (value) {
-        if (!this.scale() || !this.domain() || !value) {
+    getShape (domainVal) {
+        if (!this.scale() || !this.domain() || !domainVal) {
             return this.config().value;
         }
 
         if (this._generatedShapes) {
-            return this._generatedShapes[value];
+            return this._generatedShapes[domainVal];
         }
 
-        const shapeType = this.scale()(value);
+        const shapeType = this.scale()(domainVal);
         if (shapeType === 'string') {
             return getSymbol(shapeType);
         }
@@ -98,30 +103,5 @@ export default class ShapeAxis {
             }
         }
         return this;
-    }
-
-    /**
-     * This method returns an object that can be used to
-     * reconstruct this instance.
-     *
-     * @return {Object} the serializable props of axis
-     * @memberof ShapeAxis
-     */
-    serialize () {
-        return {
-            type: this.constructor.type(),
-            scale: this.scale(),
-            domain: this.domain(),
-            range: this.config().range,
-            config: this.config()
-        };
-    }
-
-    /**
-     * Returns the id of the axis.
-     * @return {string} Unique identifier of the axis.
-     */
-    id () {
-        return this._id;
     }
 }

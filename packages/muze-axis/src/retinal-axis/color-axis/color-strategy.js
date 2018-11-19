@@ -1,6 +1,6 @@
 import { numberInterpolator, piecewiseInterpolator, hslInterpolator } from 'muze-utils';
-import { CONTINOUS, DISCRETE } from '../enums/constants';
-import { LINEAR, SEQUENTIAL, ORDINAL, QUANTILE } from '../enums/scale-type';
+import { CONTINOUS, DISCRETE } from '../../enums/constants';
+import { LINEAR, SEQUENTIAL, ORDINAL, QUANTILE } from '../../enums/scale-type';
 import { getHslString } from './props';
 
 const getStops = (domain, stops) => {
