@@ -130,7 +130,7 @@ export default class ColorAxis extends RetinalAxis {
         if (this.domain() && domainVal !== undefined) {
             const scale = this.scale();
             const range = scale.range ? scale.range() : null;
-            const color = this._colorStrategy.value(range)(domainVal, scale, this.domain(), this.uniqueValues());
+            const color = this.strategy().value(range)(domainVal, scale, this.domain(), this.uniqueValues());
 
             if (typeof color === 'string') {
                 const col = color.substring(color.indexOf('(') + 1, color.lastIndexOf(')')).split(/,\s*/);
@@ -152,7 +152,7 @@ export default class ColorAxis extends RetinalAxis {
         if (domain.length) {
             const scale = this.scale();
             const range = scale.range ? scale.range() : null;
-            const domainRangeFn = this._colorStrategy.domainRange();
+            const domainRangeFn = this.strategy().domainRange();
             const scaleInfo = domainRangeFn(domain, this.config().stops, range);
 
             this.domain(scaleInfo.domain);
