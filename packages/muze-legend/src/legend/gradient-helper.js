@@ -1,5 +1,5 @@
 import { makeElement, applyStyle } from 'muze-utils';
-import { ContinousAxis } from '@chartshq/muze-axis';
+import { NumericAxis } from '@chartshq/muze-axis';
 import { BOTTOM, RIGHT } from '../enums/constants';
 import { ALIGN } from './defaults';
 import '../styles.scss';
@@ -50,7 +50,7 @@ export const createAxis = (context) => {
     const data = context.data();
     const { align } = context.config();
     const AxisCell = context._cells.AxisCell;
-    const newAxis = new ContinousAxis({
+    const newAxis = new NumericAxis({
         id: `legend-${context._id}`,
         orientation: align === ALIGN.VERTICAL ? RIGHT : BOTTOM,
         style: context._computedStyle,

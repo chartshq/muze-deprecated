@@ -1,5 +1,4 @@
 import {
-    ERROR_MSG,
     Store,
     mergeRecursive,
     getSmartComputedStyle,
@@ -8,16 +7,17 @@ import {
     getUniqueId
 } from 'muze-utils';
 import { createScale } from '../scale-creator';
-import { axisOrientationMap } from '../enums/axis-orientation';
-import { defaultConfig } from '../cartesian-axis/default-config';
+import { axisOrientationMap, BOTTOM, TOP } from '../enums/axis-orientation';
+import { defaultConfig } from './default-config';
 import { renderAxis } from '../axis-renderer';
+import { DOMAIN, BAND } from '../enums/constants';
 import {
     computeAxisDimensions,
     setOffset,
     registerChangeListeners,
     calculateContinousSpace
-} from './common-helper';
-import { PROPS } from '../cartesian-axis/props';
+} from './helper';
+import { PROPS } from './props';
 
 export default class SimpleAxis {
 
@@ -70,45 +70,64 @@ export default class SimpleAxis {
         return defaultConfig;
     }
 
-     /**
+    /**
+     * Sets a fixed baseline for the first ticks so that they can render effectively within
+     * the given area
      *
-     *
-     * @param {*} axisTickLabels
-     * @param {*} labelWidth
-     * @returns
-     * @memberof SimpleAxis
+     * @param {*} tickText
+     * @param {*} config
+     * @param {*} labelManager
      */
-    setRotationConfig () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
-    getTickValues () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
-    setAvailableSpace () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
+    setFixedBaseline () {
+        return this;
     }
 
     /**
      *
      *
+     * @readonly
+     * @memberof SimpleAxis
+     */
+    scale (...params) {
+        if (params.length) {
+            this._scale = params[0];
+            return this;
+        }
+        return this._scale;
+    }
+
+    /**
+     *
+     *
+     * @readonly
+     * @memberof SimpleAxis
+     */
+    axis (...params) {
+        if (params.length) {
+            this._axis = params[0];
+            return this;
+        }
+        return this._axis;
+    }
+
+    /**
+     *
+     *
+     * @param {*} d
      * @returns
      * @memberof SimpleAxis
      */
-    getTickSize () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
+    domain (...domain) {
+        if (domain.length) {
+            this.scale().domain(domain[0]);
+            this._domain = this.scale().domain();
+            this.smartTicks(this.setTickConfig());
+            this.store().commit(DOMAIN, this._domain);
+            this.logicalSpace(null);
+            return this;
+        }
+        return this._domain;
     }
-
-    getMinTickDifference () {
-        
-    }
-
-
-    setFixedBaseline () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
 
     /**
      *
@@ -146,11 +165,11 @@ export default class SimpleAxis {
         return scale;
     }
 
-    getTickFormatter (tickFormat) {
+    getTickFormatter (tickFormat, numberFormat) {
         if (tickFormat) {
-            return ticks => (val, i) => tickFormat(val, i, ticks);
+            return ticks => (val, i) => tickFormat(numberFormat(val), i, ticks);
         }
-        return null;
+        return () => val => numberFormat(val);
     }
 
     /**
@@ -159,12 +178,12 @@ export default class SimpleAxis {
      * @returns
      * @memberof SimpleAxis
      */
-    createAxis () {
+    createAxis (config) {
         const {
             tickFormat,
             numberFormat,
             orientation
-        } = this.config();
+        } = config;
         const axisClass = axisOrientationMap[orientation];
 
         if (axisClass) {
@@ -176,11 +195,62 @@ export default class SimpleAxis {
         return null;
     }
 
+    /**
+     *
+     *
+     * @memberof SimpleAxis
+     */
+    setTickConfig () {
+        return this;
+    }
+
+    /**
+     *
+     *
+     * @param {*} axisTickLabels
+     * @param {*} labelWidth
+     * @returns
+     * @memberof SimpleAxis
+     */
+    setRotationConfig (axisTickLabels, labelWidth) {
+        const { orientation } = this.config();
+
+        if (orientation === TOP || orientation === BOTTOM) {
+            const range = this.range();
+            const length = Math.abs(range[0] - range[1]);
+            this.config({ labels: { rotation: 0 } });
+            if (length > 0 && axisTickLabels.length * (labelWidth + this._minTickDistance.width) > length) {
+                this.config({ labels: { rotation: -90 } });
+            }
+        }
+        return this;
+    }
+
+    /**
+     *
+     *
+     * @returns
+     * @memberof SimpleAxis
+     */
+    adjustRange () {
+        return this;
+    }
+
     getScaleValue (domainVal) {
         if (domainVal === null || domainVal === undefined) {
             return undefined;
         }
         return this.scale()(domainVal);
+    }
+
+    /**
+     *
+     *
+     * @returns
+     * @memberof SimpleAxis
+     */
+    getTickSize () {
+        return this.axis().tickSize();
     }
 
     /**
@@ -201,6 +271,11 @@ export default class SimpleAxis {
      * @memberof SimpleAxis
      */
     getLogicalSpace () {
+        if (!this.logicalSpace()) {
+            this.logicalSpace(calculateContinousSpace(this));
+            setOffset(this);
+            this.logicalSpace();
+        }
         return this.logicalSpace();
     }
 
@@ -220,31 +295,47 @@ export default class SimpleAxis {
      * @param {number} v2 End range value
      * @return {Array} range values
      */
-    getNearestRange (rangeStart, rangeEnd) {
-        return [rangeStart, rangeEnd];
+    getNearestRange (v1, v2) {
+        let p1;
+        let p2;
+        let extent;
+        const {
+            type
+        } = this.config();
+        const scale = this.scale();
+        const range = scale.range();
+        const reverse = range[0] > range[1];
+
+        if (type === BAND) {
+            extent = scale.invertExtent(v1, v2);
+            p1 = scale(reverse ? extent[extent.length - 1] : extent[0]);
+            p2 = scale(reverse ? extent[0] : extent[extent.length - 1]) + scale.bandwidth();
+            return [p1, p2];
+        }
+        return [v1, v2];
     }
 
-    // /**
-    //  * This method is used to assign a domain to the axis.
-    //  *
-    //  * @param {Array} domain the domain of the scale
-    //  * @memberof SimpleAxis
-    //  */
-    // updateDomainBounds (domain) {
-    //     let currentDomain = this.domain();
-    //     if (this.config().domain) {
-    //         currentDomain = this.config().domain;
-    //     } else {
-    //         if (currentDomain.length === 0) {
-    //             currentDomain = domain;
-    //         }
-    //         if (domain.length) {
-    //             currentDomain = [Math.min(currentDomain[0], domain[0]), Math.max(currentDomain[1], domain[1])];
-    //         }
-    //     }
+    /**
+     * This method is used to assign a domain to the axis.
+     *
+     * @param {Array} domain the domain of the scale
+     * @memberof SimpleAxis
+     */
+    updateDomainBounds (domain) {
+        let currentDomain = this.domain();
+        if (this.config().domain) {
+            currentDomain = this.config().domain;
+        } else {
+            if (currentDomain.length === 0) {
+                currentDomain = domain;
+            }
+            if (domain.length) {
+                currentDomain = [Math.min(currentDomain[0], domain[0]), Math.max(currentDomain[1], domain[1])];
+            }
+        }
 
-    //     return this.domain(currentDomain);
-    // }
+        return this.domain(currentDomain);
+    }
 
     /**
      *
@@ -263,6 +354,14 @@ export default class SimpleAxis {
             d !== undefined && d !== null && cachedDomain.push(d);
         });
         return this.updateDomainBounds(cachedDomain);
+    }
+
+    getMinTickDifference () {
+        return this.domain();
+    }
+
+    getFormattedTickValues (tickValues) {
+        return tickValues;
     }
 
     /**
@@ -297,6 +396,22 @@ export default class SimpleAxis {
     }
 
     /**
+     * This method returns an object that can be used to
+     * reconstruct this instance.
+     *
+     * @return {Object} the serializable props of axis
+     * @memberof SimpleAxis
+     */
+    serialize () {
+        return {
+            name: this.name,
+            type: this.type,
+            range: this.range(),
+            config: this.config()
+        };
+    }
+
+    /**
      * Returns the id of the axis.
      * @return {string} Unique identifier of the axis.
      */
@@ -306,7 +421,6 @@ export default class SimpleAxis {
 
     registerEvent (event, fn) {
         this._eventList.push({ name: event, action: fn });
-        return this;
     }
 
     /**
@@ -317,7 +431,7 @@ export default class SimpleAxis {
      */
     on (event, fn) {
         event = event || 'update';
-        return this.registerEvent(event, fn);
+        this.registerEvent(event, fn);
     }
 
     /**

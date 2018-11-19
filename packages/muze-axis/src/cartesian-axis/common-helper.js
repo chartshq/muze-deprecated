@@ -1,20 +1,6 @@
 import { TOP, LEFT, BOTTOM } from '../enums/axis-orientation';
 import { LOG } from '../enums/scale-type';
 
-export const getNumberOfTicks = (availableSpace, labelDim, axis, axisInstance) => {
-    const ticks = axis.scale().ticks();
-    const { numberOfTicks } = axisInstance.config();
-    const tickLength = ticks.length;
-    let numberOfValues = tickLength;
-
-    if (tickLength * (labelDim * 1.5) > availableSpace) {
-        numberOfValues = Math.floor(availableSpace / (labelDim * 1.5));
-    }
-
-    numberOfValues = Math.min(numberOfTicks, Math.max(1, numberOfValues));
-    return axis.scale().ticks(numberOfValues);
-};
-
 export const sanitizeDomain = (domain, context) => {
     const interpolator = context.config().interpolator;
     // @todo: Get from scale decorator
@@ -151,38 +137,6 @@ export const setOffset = (context) => {
         y = yOffset === undefined ? logicalSpace.height : yOffset;
     }
     context.config({ xOffset: x, yOffset: y });
-};
-
-/**
- *
- *
- * @param {*} timeDiff
- * @param {*} range
- * @param {*} domain
- * @returns
- */
-const getAxisOffset = (timeDiff, range, domain) => {
-    const pvr = Math.abs(range[1] - range[0]) / (domain[1] - domain[0]);
-    const width = (pvr * timeDiff);
-    const avWidth = (range[1] - range[0]);
-    const bars = avWidth / width;
-    const barWidth = avWidth / (bars + 1);
-    const diff = avWidth - barWidth * bars;
-
-    return diff / 2;
-};
-
-export const adjustRange = (minDiff, range, domain, orientation) => {
-    const diff = getAxisOffset(minDiff, range, domain);
-
-    if (orientation === TOP || orientation === BOTTOM) {
-        range[0] += diff;
-        range[1] -= diff;
-    } else {
-        range[0] -= diff;
-        range[1] += diff;
-    }
-    return range;
 };
 
  /**
@@ -335,53 +289,6 @@ export const calculateBandSpace = (context) => {
     return {
         width,
         height
-    };
-};
-
-/**
-     * Calculates the logical space of the axis
-     * @return {Object} Width and height occupied by the axis.
-     */
-export const calculateContinousSpace = (context) => {
-    const range = context.range();
-    const config = context.config();
-    const axisDimensions = context.getAxisDimensions();
-
-    const {
-        orientation,
-        show,
-        showAxisName
-    } = config;
-    const {
-        axisLabelDim
-    } = axisDimensions;
-
-    if (show === false) {
-        return {
-            width: 0,
-            height: 0
-        };
-    }
-
-    const { width: axisDimWidth } = axisLabelDim;
-
-    if (orientation === TOP || orientation === BOTTOM) {
-        const { width, height } = getHorizontalAxisSpace(context, axisDimensions, config);
-        const axisWidth = Math.max(width, axisDimWidth);
-
-        return {
-            width: axisWidth,
-            height
-        };
-    }
-
-    const { width, height } = getVerticalAxisSpace(context, axisDimensions, config, range);
-
-    const effHeight = Math.max(height, showAxisName ? axisDimWidth : 0);
-
-    return {
-        width,
-        height: effHeight
     };
 };
 

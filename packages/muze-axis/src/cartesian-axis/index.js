@@ -1,4 +1,3 @@
-export { default as ContinousAxis } from './continous-axis';
-export { default as BandAxis } from './band-axis';
-export { default as TimeAxis } from './time-axis';
+export { ContinousAxis, NumericAxis, TimeAxis } from './continous-axis';
+export { BandAxis } from './ordinal-axis';
 export { default as SimpleAxis } from './simple-axis';

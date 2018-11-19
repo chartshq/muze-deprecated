@@ -2,7 +2,6 @@ import { mergeRecursive } from 'muze-utils';
 
 export const PROPS = {
     availableSpace: {},
-    axis: {},
     axisDimensions: {},
     config: {
         sanitization: (context, value) => {
@@ -11,7 +10,6 @@ export const PROPS = {
             }
             value = mergeRecursive(context._config || {}, value);
             value.axisNamePadding = Math.max(value.axisNamePadding, 0);
-            context._config = value;
             context.axis(context.createAxis(value));
             context.store().commit('config', value);
             return value;
@@ -32,7 +30,7 @@ export const PROPS = {
             return value;
         }
     },
-    scale: {},
+
     smartTicks: {},
     store: {},
     tickSize: {}

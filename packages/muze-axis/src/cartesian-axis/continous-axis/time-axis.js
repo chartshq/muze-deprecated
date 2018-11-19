@@ -1,9 +1,39 @@
-import { getSmallestDiff } from 'muze-utils';
-import SimpleAxis from './simple-axis';
-import { adjustRange } from './helper';
-import { TIME } from '../enums/scale-type';
-import { axisOrientationMap, BOTTOM, TOP } from '../enums/axis-orientation';
-import { DOMAIN } from '../enums/constants';
+import { TIME } from '../../enums/scale-type';
+import { axisOrientationMap, BOTTOM, TOP } from '../../enums/axis-orientation';
+import { DOMAIN } from '../../enums/constants';
+import ContinousAxis from './continous-axis';
+
+/**
+ *
+ *
+ * @param {*} timeDiff
+ * @param {*} range
+ * @param {*} domain
+ * @returns
+ */
+const getAxisOffset = (timeDiff, range, domain) => {
+    const pvr = Math.abs(range[1] - range[0]) / (domain[1] - domain[0]);
+    const width = (pvr * timeDiff);
+    const avWidth = (range[1] - range[0]);
+    const bars = avWidth / width;
+    const barWidth = avWidth / (bars + 1);
+    const diff = avWidth - barWidth * bars;
+
+    return diff / 2;
+};
+
+export const adjustRange = (minDiff, range, domain, orientation) => {
+    const diff = getAxisOffset(minDiff, range, domain);
+
+    if (orientation === TOP || orientation === BOTTOM) {
+        range[0] += diff;
+        range[1] -= diff;
+    } else {
+        range[0] -= diff;
+        range[1] += diff;
+    }
+    return range;
+};
 
 /**
  *
@@ -12,11 +42,22 @@ import { DOMAIN } from '../enums/constants';
  * @class TimeAxis
  * @extends {SimpleAxis}
  */
-export default class TimeAxis extends SimpleAxis {
+export default class TimeAxis extends ContinousAxis {
 
     constructor (...params) {
         super(...params);
         this._minDiff = Infinity;
+    }
+
+    /**
+     *
+     *
+     * @static
+     * @returns
+     * @memberof TimeAxis
+     */
+    static type () {
+        return TIME;
     }
 
     /**
@@ -31,17 +72,6 @@ export default class TimeAxis extends SimpleAxis {
 
         scale = scale.nice();
         return scale;
-    }
-
-    /**
-     *
-     *
-     * @static
-     * @returns
-     * @memberof TimeAxis
-     */
-    static type () {
-        return TIME;
     }
 
     /**
@@ -91,30 +121,6 @@ export default class TimeAxis extends SimpleAxis {
         return null;
     }
 
-    getTickFormatter (tickFormat) {
-        if (tickFormat) {
-            return ticks => (val, i) => tickFormat(val, i, ticks);
-        }
-        return null;
-    }
-
-     /**
-     *
-     *
-     * @returns
-     * @memberof SimpleAxis
-     */
-    getTickSize () {
-        const {
-            showInnerTicks,
-            showOuterTicks
-        } = this.config();
-        const axis = this.axis();
-        axis.tickSizeInner(showInnerTicks === false ? 0 : 6);
-        axis.tickSizeOuter(showOuterTicks === false ? 0 : 6);
-        return super.getTickSize();
-    }
-
     /**
      *
      *
@@ -132,7 +138,7 @@ export default class TimeAxis extends SimpleAxis {
      * @returns
      * @memberof TimeAxis
      */
-    minDiff (diff) {
+    setMinDiff (diff) {
         this._minDiff = Math.min(this._minDiff, diff);
         return this;
     }
@@ -186,10 +192,6 @@ export default class TimeAxis extends SimpleAxis {
             this.logicalSpace(null);
             return this;
         } return this._domain;
-    }
-
-    getMinTickDifference () {
-        return getSmallestDiff(this.config().tickValues);
     }
 
     /**

@@ -2,8 +2,8 @@
  * This file exports functionality that is used to render axis.
  */
 import { selectElement, makeElement, angleToRadian } from 'muze-utils';
-import * as AxisOrientation from './enums/axis-orientation';
-import { LINEAR, HIDDEN, BOTTOM, TOP, LEFT, RIGHT } from './enums/constants';
+import * as AxisOrientation from '../enums/axis-orientation';
+import { LINEAR, HIDDEN, BOTTOM, TOP } from '../enums/constants';
 
 /**
  *
@@ -127,26 +127,12 @@ const changeTickOrientation = (selectContainer, axisInstance, tickSize) => {
     return tickText;
 };
 
-export const setFixedBaseline = (axisInstance) => {
+const setFixedBaseline = (axisInstance) => {
     const {
-        fixedBaseline,
-        orientation,
-        labels
+        fixedBaseline
     } = axisInstance.config();
-    const {
-        rotation
-    } = labels;
     if (fixedBaseline) {
-        const axis = axisInstance.axis();
-        const { width, height } = axisInstance._axisDimensions.largestLabelDim;
-        axis.tickTransform((d, i) => {
-            if (i === 0 && (orientation === LEFT || orientation === RIGHT)) {
-                return `translate(0, -${(height) / 3}px)`;
-            }
-            if (i === 0 && (orientation === TOP || orientation === BOTTOM) && rotation === 0) {
-                return `translate(${width / 2}px,  ${0}px) rotate(${rotation}deg)`;
-            } return '';
-        });
+        axisInstance.setFixedBaseline();
     }
 };
 
@@ -254,7 +240,7 @@ export function renderAxis (axisInstance) {
 
     // Draw axis ticks
     selectContainer.attr('transform', `translate(${xOffset},${yOffset})`);
-    // setFixedBaseline(axisInstance);
+    setFixedBaseline(axisInstance);
     if (labels.smartTicks === false) {
         selectContainer.transition()
                         .duration(1000).call(axis);
