@@ -4,7 +4,8 @@ import {
     getUniqueId,
     getSmartComputedStyle,
     generateGetterSetters,
-    mergeRecursive
+    mergeRecursive,
+    ERROR_MSG
 } from 'muze-utils';
 import { behaviouralActions } from '@chartshq/muze-firebolt';
 import * as legendBehaviours from '../firebolt/behavioural';
@@ -59,6 +60,17 @@ export default class SimpleLegend {
     id () {
         return this._id;
     }
+
+    /**
+     * Returns a unique identifier for the instance used
+     * to control selective rendering.
+     *
+     * @memberof SimpleCell
+     */
+    getDataFromScale () {
+        throw new Error(ERROR_MSG.INTERFACE_IMPL);
+    }
+
     /**
      * Initializes an instance of the class
      *
@@ -114,14 +126,6 @@ export default class SimpleLegend {
      */
     elemType () {
         return PATH;
-    }
-
-    canvasAlias (...alias) {
-        if (alias.length) {
-            this._canvasAlias = alias[0];
-            return this;
-        }
-        return this._canvasAlias;
     }
 
     /**
@@ -183,7 +187,7 @@ export default class SimpleLegend {
         const effBorder = border * 2;
         const effMargin = margin * 2;
 
-        this.data(this.dataFromScale(this.scale()));
+        this.data(this.getDataFromScale(this.scale()));
         // Get space occupied by title
         const titleSpace = this.getTitleSpace();
         const titleHeight = titleSpace.height > 0 ? titleSpace.height + effPadding : 0;
@@ -235,7 +239,7 @@ export default class SimpleLegend {
     renderTitle (container) {
         const { titleSpaces, border, padding, width } = this.measurement();
         const { borderStyle, borderColor } = this.config();
-        return titleCreator(container, this.title(), {
+        titleCreator(selectElement(container), this.title(), {
             height: titleSpaces.height,
             width,
             border,
@@ -243,6 +247,7 @@ export default class SimpleLegend {
             borderStyle,
             borderColor
         }, this.config());
+        return this;
     }
 
     /**
@@ -279,11 +284,12 @@ export default class SimpleLegend {
         this.legendContainer(legendContainer.node());
 
         // create title
-        this.renderTitle(legendContainer);
+        this.renderTitle(legendContainer.node());
         firebolt.createSelectionSet(this.data().map(d => d.id));
         return legendContainer;
     }
-  /**
+
+    /**
      *
      *
      * @param {*} data

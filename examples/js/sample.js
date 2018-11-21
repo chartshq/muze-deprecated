@@ -84,6 +84,9 @@ d3.json('../data/cars.json', (data) => {
     .width(600)
     .height(500)
     .config({
+        legend: {
+            position: 'bottom'
+        },
         border: {
             color: '#f6f6f6'
         }

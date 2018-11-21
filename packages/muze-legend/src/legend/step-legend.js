@@ -51,7 +51,7 @@ export default class StepLegend extends SimpleLegend {
      * @returns
      * @memberof StepLegend
      */
-    dataFromScale (scale) {
+    getDataFromScale (scale) {
         let domainLeg = [];
         const { scaleType, domain, steps, scaleFn } = getScaleInfo(scale);
 

@@ -57,7 +57,7 @@ export default class GradientLegend extends SimpleLegend {
      * @returns
      * @memberof GradientLegend
      */
-    dataFromScale (scale) {
+    getDataFromScale (scale) {
         let domainForLegend = [];
         const { scaleType, domain, steps, scaleFn } = getScaleInfo(scale);
 

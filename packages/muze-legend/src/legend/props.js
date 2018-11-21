@@ -1,6 +1,7 @@
 import { mergeRecursive } from 'muze-utils';
 
 export const PROPS = {
+    canvasAlias: {},
     config: {
         sanitization: (context, value) => mergeRecursive(context._config || {}, value)
     },
