@@ -4,8 +4,7 @@ import { DEFAULT_CLASS_NAME } from '../constants/defaults'
 export class DataPoint {
     constructor (node) {
         this._node = node;
-        this._className = node.model().host() && node.model().host().className ?
-                            node.model().host().className : DEFAULT_CLASS_NAME;
+        this._className = DEFAULT_CLASS_NAME;
     }
 
     node () {
@@ -17,6 +16,10 @@ export class DataPoint {
     }
 
     className () {
+        if (this._node.model().host() && this._node.model().host() &&
+                typeof (this._node.model().host()) !== 'string') {
+            this._className = this._node.model().host().className();
+        }
         return this._className;
     }
 }

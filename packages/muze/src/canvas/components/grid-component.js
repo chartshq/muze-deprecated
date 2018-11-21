@@ -8,8 +8,8 @@ export default class GridComponent extends MuzeComponent {
         super(params.name, params.config.dimensions, 0);
         this.component = params.component;
         this.params = params;
-        this.target = params.config.target;
-        this.className = params.config.className;
+        this.target(params.config.target);
+        this.className(params.config.className);
         this.sanitizeGrid();
     }
 

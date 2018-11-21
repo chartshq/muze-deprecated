@@ -1,11 +1,6 @@
 import LayoutComponent from './layoutComponent';
 
 class DummyComponent extends LayoutComponent {
-    constructor (seed, dimensions) {
-        super(seed, dimensions);
-        this.seed = seed;
-    }
-
     getLogicalSpace () {
         return {
             width: this.boundBox.width - (2 * this.seed),
@@ -14,30 +9,12 @@ class DummyComponent extends LayoutComponent {
     }
 
     setSpatialConfig (conf) {
-        this.boundBox.top = conf.y;
-        this.boundBox.left = conf.x;
-
-        this.boundBox.newDimensions = {
+        this.boundBox({ top: conf.y, left: conf.x });
+        this.newDimensions = {
             width: conf.width,
             height: conf.height
         };
-        this.renderAt = conf.renderAt;
-    }
-
-    set componentName (name) {
-        this._componentName = name;
-    }
-
-    get componentName () {
-        return this._componentName;
-    }
-
-    set chartComponent (componentObj) {
-        this._component = componentObj;
-    }
-
-    get chartComponent () {
-        return this._chartComponent;
+        this.renderAt(conf.renderAt);
     }
 
     draw () {

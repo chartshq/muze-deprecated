@@ -15,12 +15,12 @@ export default class DefinitionManager {
     _prepareTargetComponentMap () {
         this._targetComponentMap = new Map();
         this._componentMap.forEach((value) => {
-            if (this._targetComponentMap.has(value.target)) {
-                this._targetComponentMap.get(value.target).push(value);
+            if (this._targetComponentMap.has(value.target())) {
+                this._targetComponentMap.get(value.target()).push(value);
             } else {
                 const temp = [];
                 temp.push(value);
-                this._targetComponentMap.set(value.target, temp);
+                this._targetComponentMap.set(value.target(), temp);
             }
         });
     }
@@ -48,7 +48,7 @@ export default class DefinitionManager {
     }
 
     _getComponent (canvasComponent, componentName) {
-        const comp = canvasComponent.find(component => component.componentName === componentName);
+        const comp = canvasComponent.find(component => component.name() === componentName);
         return (comp && comp !== -1) ? comp : null;
     }
 
@@ -74,8 +74,8 @@ export default class DefinitionManager {
 
     _createPlaceHolderComponent (height, width, position) {
         const comp = new DummyComponent(0, { height, width });
-        comp.name = 'placeHolder';
-        comp.position = position;
+        comp.name('placeHolder');
+        comp.position(position);
         return comp;
     }
   /**
@@ -97,14 +97,14 @@ export default class DefinitionManager {
         let leftOvercomponentRationWidth = 1;
         let leftHeight = 0;
         let leftWidth = 0;
-        if (component.position === 'top' || component.position === 'bottom') {
+        if (component.position() === 'top' || component.position() === 'bottom') {
             cut = 'h';
-            componentRatioWidth = componentHeight / definitionModel._remainingHeight;
-            leftHeight = definitionModel._remainingHeight - componentHeight;
-            leftWidth = definitionModel._remainingWidth;
+            componentRatioWidth = componentHeight / definitionModel.remainingHeight();
+            leftHeight = definitionModel.remainingHeight() - componentHeight;
+            leftWidth = definitionModel.remainingWidth();
         } else {
             cut = 'v';
-            componentRatioWidth = componentWidth / definitionModel._remainingWidth;
+            componentRatioWidth = componentWidth / definitionModel.remainingWidth();
             leftWidth = definitionModel.remainingWidth() - componentWidth;
             leftHeight = definitionModel.remainingHeight();
         }
@@ -113,7 +113,7 @@ export default class DefinitionManager {
     // update parentModel
         definitionModel.cut(cut);
 
-        const firstLane = new DefinitionModel(component.componentName,
+        const firstLane = new DefinitionModel(component.name(),
                                                 null,
                                                 componentRatioWidth,
                                                 isGridComponent ? false : isPreferred,
@@ -129,7 +129,7 @@ export default class DefinitionManager {
         secondLane.remainingWidth(leftWidth);
         if (isPreferred) {
             definitionModel.lanes([firstLane]);
-        } else if (component.position === 'top' || component.position === 'left') {
+        } else if (component.position() === 'top' || component.position() === 'left') {
             definitionModel.lanes([firstLane, secondLane]);
         } else {
             definitionModel.lanes([secondLane, firstLane]);

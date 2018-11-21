@@ -74,24 +74,19 @@ d3.json('../data/cars.json', (data) => {
 
     const crosstab = env
     .canvas()
-    .rows([['Cylinders', 'Origin'], ['Displacement']])
-    .columns([['Miles_per_Gallon'], ['Cylinders']])
+    .rows(['Displacement'])
+    .columns([['Miles_per_Gallon']])
     .data(rootData)
-    .color('Acceleration')
+    .color('Maker')
     .width(1000)
     .height(1000)
     .config({
         border: {
         }
     })
-    .title('Avg Mileage of cars by Country faceted by Cylinders', {
-        align: 'center'
-    })
+    .title('Avg Mileage of cars by Country faceted by Cylinders')
     .subtitle(
-      'Click on the bars to see how the charts in right gets filtered',
-        {
-            align: 'center'
-        }
+      'Click on the bars to see how the charts in right gets filtered'
     )
     .mount('#chart2');
 

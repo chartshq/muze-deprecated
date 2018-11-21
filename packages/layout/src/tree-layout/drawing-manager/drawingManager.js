@@ -9,6 +9,7 @@ export class DrawingManager {
         this._layoutClassName = data.layoutClassName;
         this._renderer = renderer;
         this._mount = Utils.isDOMElement(container) ? container : Utils.getElement(container);
+        this._componentRenderer = null;
     }
 
     _drawLayout () {
@@ -23,7 +24,7 @@ export class DrawingManager {
 
     _drawComponent (componentData) {
         componentData.children().forEach((node) => {
-            if (node.model() && node.model().host()) {
+            if (node.model() && node.model().host() && typeof (node.model().host()) !== 'string') {
                 node.model().host().draw();
             }
             this._drawComponent(node);
@@ -48,15 +49,16 @@ export class DrawingManager {
 
     _resolveAligment (componentData) {
         componentData.children().forEach((component) => {
-            if (component.model() && component.model().host() && component.model().host().alignWith) {
+            if (component.model() && component.model().host() &&
+            typeof (component.model().host()) !== 'string' && component.model().host().alignWith()) {
                 let childNode;
                 const point = this._findNode(component.id()).node();
                 const node = point.boundBox();
                 const nodeId = point.id();
-                const refNode = this._findNode(this._componentMap.get(component.model().host().alignWith).renderAt)
+                const refNode = this._findNode(this._componentMap.get(component.model().host().alignWith()).renderAt())
                                     .node()
                                     .boundBox();
-                switch (component.model().host().alignment) {
+                switch (component.model().host().alignment()) {
                 case 'left':
                     childNode = this._getChildNode(node.top,
                     refNode.left,
@@ -103,15 +105,15 @@ export class DrawingManager {
                     break;
                 }
         // check if model in parent component
-                this._componentMap.get(component.model().host().componentName).renderAt = `${component._id}-holder`;
-                this.componentRenderer.parentDiv.appendChild(childNode);
+                this._componentMap.get(component.model().host().name()).renderAt(`${component._id}-holder`);
+                this._componentRenderer.parentDiv.appendChild(childNode);
             }
             this._resolveAligment(component);
         });
     }
 
     _getChildNode (top, left, height, width, _id) {
-        return this.componentRenderer.createAndPositionDiv({
+        return this._componentRenderer.createAndPositionDiv({
             top,
             left,
             height,
@@ -122,11 +124,11 @@ export class DrawingManager {
     }
 
     _findNode (nodeID) {
-        return this.componentRenderer.coordinates().find(point => point.node().id() === nodeID);
+        return this._componentRenderer.coordinates().find(point => point.node().id() === nodeID);
     }
 
     _renderHTML () {
-        this.componentRenderer = new HTMLRenderer(this._data);
-        this.componentRenderer.createhtml(this._mount, this._layoutClassName);
+        this._componentRenderer = new HTMLRenderer(this._data);
+        this._componentRenderer.createhtml(this._mount, this._layoutClassName);
     }
 }
