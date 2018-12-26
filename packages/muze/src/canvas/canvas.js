@@ -291,8 +291,10 @@ export default class Canvas extends TransactionSupport {
         // Update life cycle
         lifeCycleManager.notify({ client: this, action: 'drawn' });
         const promises = [];
-        visGroup.matrixInstance().value.each((el) => {
-            promises.push(el.valueOf().done());
+        this.composition().layout.viewInfo().viewMatricesInfo.matrices.center[1].forEach((cellsRow) => {
+            cellsRow.forEach((cell) => {
+                promises.push(cell.valueOf().done());
+            });
         });
         Promise.all(promises).then(() => {
             this._renderedResolve();
