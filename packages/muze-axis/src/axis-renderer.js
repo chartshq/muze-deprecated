@@ -82,7 +82,9 @@ const rotateAxis = (instance, tickText, labelManager) => {
                                 ${yShift + tickSize}) rotate(${rotation})`);
         }
         selectElement(this).transition()
-                        .duration(1000).text(datum);
+                        .duration(1000)
+                        .on('end', instance.registerAnimationDoneHook())
+                        .text(datum);
     });
     return tickText;
 };
@@ -138,6 +140,7 @@ const changeTickOrientation = (selectContainer, axisInstance, tickSize) => {
 
                             .transition()
                             .duration(1000)
+                            .on('end', axisInstance.registerAnimationDoneHook())
                             .attr('dy', (d, i) => {
                                 if (orientation === BOTTOM || i !== 0) {
                                     return _smartTicks[0].oriTextHeight;
@@ -268,7 +271,9 @@ export function renderAxis (axisInstance) {
     setFixedBaseline(axisInstance);
     if (labels.smartTicks === false) {
         selectContainer.transition()
-                        .duration(1000).call(axis);
+                        .duration(1000)
+                        .on('end', axisInstance.registerAnimationDoneHook())
+                        .call(axis);
     } else {
         selectContainer.call(axis);
     }

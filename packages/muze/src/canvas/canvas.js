@@ -311,6 +311,23 @@ export default class Canvas extends TransactionSupport {
                     });
                 });
             });
+
+            this.xAxes().forEach((axis) => {
+                axis.forEach((unitAxis) => {
+                    if (unitAxis.animationDone) {
+                        animDonePromises.push(unitAxis.animationDone());
+                    }
+                });
+            });
+
+            this.yAxes().forEach((axis) => {
+                axis.forEach((unitAxis) => {
+                    if (unitAxis.animationDone) {
+                        animDonePromises.push(unitAxis.animationDone());
+                    }
+                });
+            });
+
             Promise.all(animDonePromises).then(() => {
                 lifeCycleManager.notify({ client: this, action: 'animationend' });
             });

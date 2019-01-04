@@ -634,7 +634,7 @@ export default class BaseLayer extends SimpleLayer {
         return Promise.all(this._animationDonePromises);
     }
 
-    _registerAnimationDoneHook () {
+    registerAnimationDoneHook () {
         let resolveFn;
         const promise = new Promise((resolve) => {
             resolveFn = resolve;
