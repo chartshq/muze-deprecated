@@ -290,12 +290,14 @@ export default class Canvas extends TransactionSupport {
         renderComponents(this, components, layoutConfig, measurement);
         // Update life cycle
         lifeCycleManager.notify({ client: this, action: 'drawn' });
+
         const promises = [];
         this.composition().layout.viewInfo().viewMatricesInfo.matrices.center[1].forEach((cellsRow) => {
             cellsRow.forEach((cell) => {
                 promises.push(cell.valueOf().done());
             });
         });
+
         Promise.all(promises).then(() => {
             this._renderedResolve();
         });
