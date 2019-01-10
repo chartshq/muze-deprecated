@@ -66,6 +66,7 @@ export default class BaseLayer extends SimpleLayer {
      */
     constructor (data, axes, config, dependencies = {}) {
         super();
+
         generateGetterSetters(this, props);
         this.data(data);
         this.axes(axes);
@@ -76,6 +77,7 @@ export default class BaseLayer extends SimpleLayer {
         this._cachedData = [];
         this._id = getUniqueId();
         this._measurement = {};
+        this._animationDonePromises = [];
     }
 
     static getState () {
@@ -93,20 +95,23 @@ export default class BaseLayer extends SimpleLayer {
     store (...params) {
         if (params.length) {
             this._store = params[0];
-            const localNs = STATE_NAMESPACES.LAYER_LOCAL_NAMESPACE;
             const metaInf = this.metaInf();
+            const localNs = `${STATE_NAMESPACES.LAYER_LOCAL_NAMESPACE}.${metaInf.namespace}`;
             initializeGlobalState(this);
-            transactor(this, defaultOptions, this.store().model, {
-                namespace: localNs,
-                subNamespace: metaInf.namespace
+            const store = this.store();
+            store.append(`${STATE_NAMESPACES.LAYER_LOCAL_NAMESPACE}`, {
+                [metaInf.namespace]: null
+            });
+
+            transactor(this, defaultOptions, store.model, {
+                namespace: localNs
             });
             registerListeners(this, listenerMap, {
                 local: localNs,
                 global: STATE_NAMESPACES.LAYER_GLOBAL_NAMESPACE
             }, {
                 unitRowIndex: metaInf.unitRowIndex,
-                unitColIndex: metaInf.unitColIndex,
-                subNamespace: metaInf.namespace
+                unitColIndex: metaInf.unitColIndex
             });
             return this;
         }
@@ -358,6 +363,15 @@ export default class BaseLayer extends SimpleLayer {
         }
     }
 
+    disableUpdate () {
+        this._updateLock = true;
+        return this;
+    }
+
+    enableUpdate () {
+        this._updateLock = false;
+        return this;
+    }
     /**
      *
      *
@@ -620,5 +634,33 @@ export default class BaseLayer extends SimpleLayer {
     getPlotElementsFromSet (set) {
         return selectElement(this.mount()).selectAll(this.elemType()).filter(data =>
             (data ? set.indexOf(data._id) !== -1 : false));
+    }
+
+    /**
+     * Notifies when all animations/transitions of the layer are completed.
+     *
+     * @public
+     * @return {Promise} Returns a promise to notify the animation completion.
+     */
+    animationDone () {
+        return Promise.all(this._animationDonePromises);
+    }
+
+    registerAnimationDoneHook () {
+        let resolveFn;
+        const promise = new Promise((resolve) => {
+            resolveFn = resolve;
+        });
+        this._animationDonePromises.push(promise);
+
+        return () => {
+            resolveFn();
+        };
+    }
+
+    getRenderProps () {
+        const metaInf = this.metaInf();
+        return [`${STATE_NAMESPACES.GROUP_GLOBAL_NAMESPACE}.domain.y.${metaInf.unitRowIndex}0`,
+            `${STATE_NAMESPACES.GROUP_GLOBAL_NAMESPACE}.domain.x.${metaInf.unitColIndex}0`];
     }
 }

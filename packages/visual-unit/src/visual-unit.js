@@ -27,9 +27,7 @@ import {
     getLayerAxisIndex,
     sanitizeLayerDef,
     createSideEffectGroup,
-    resolveEncodingTransform,
-    createLayerState,
-    initializeGlobalState
+    resolveEncodingTransform
 } from './helper';
 import { renderGridLineLayers } from './helper/grid-lines';
 import localOptions from './local-options';
@@ -71,10 +69,6 @@ export default class VisualUnit {
             smartLabel: dependencies.smartLabel,
             lifeCycleManager: dependencies.lifeCycleManager
         };
-        this._renderedResolve = null;
-        this._renderedPromise = new Promise((resolve) => {
-            this._renderedResolve = resolve;
-        });
         this._layerDeps.throwback.registerChangeListener([CommonProps.ON_LAYER_DRAW], () => {
             this._renderedResolve();
             this._lifeCycleManager.notify({ client: this.layers(), action: 'drawn', formalName: 'layer' });
@@ -102,15 +96,7 @@ export default class VisualUnit {
             {
                 domain: {}
             },
-            {
-                layerDef: {},
-                layers: {},
-                config: {},
-                data: {},
-                width: {},
-                height: {},
-                transform: {}
-            }
+            localOptions
         ];
     }
 
@@ -118,19 +104,19 @@ export default class VisualUnit {
         if (params.length) {
             this._store = params[0];
             const metaInf = this.metaInf();
-            initializeGlobalState(this);
-            createLayerState(this);
+            this.store().append(`${STATE_NAMESPACES.UNIT_LOCAL_NAMESPACE}`, {
+                [`${metaInf.namespace}`]: null
+            });
+            const localNs = `${STATE_NAMESPACES.UNIT_LOCAL_NAMESPACE}.${metaInf.namespace}`;
             transactor(this, localOptions, this.store().model, {
-                namespace: STATE_NAMESPACES.UNIT_LOCAL_NAMESPACE,
-                subNamespace: metaInf.namespace
+                namespace: localNs
             });
             registerListeners(this, listenerMap, {
-                local: STATE_NAMESPACES.UNIT_LOCAL_NAMESPACE,
+                local: localNs,
                 global: STATE_NAMESPACES.UNIT_GLOBAL_NAMESPACE
             }, {
                 rowIndex: metaInf.rowIndex,
-                colIndex: metaInf.colIndex,
-                subNamespace: metaInf.namespace
+                colIndex: metaInf.colIndex
             });
             this.firebolt(new UnitFireBolt(this, {
                 physical: physicalActions,
@@ -226,8 +212,6 @@ export default class VisualUnit {
             height
         });
         this._sideEffectGroup = createSideEffectGroup(node, `${classPrefix}-${sideEffectClassName}`);
-
-        this.firebolt().mapActionsAndBehaviour();
         return this;
     }
 
@@ -285,13 +269,15 @@ export default class VisualUnit {
         const rootSvg = this._rootSvg && this._rootSvg.node();
         const width = this.width();
         const height = this.height();
+        const { el, dimensions } = this.parentContainerInf();
         return {
             htmlContainer: this.mount(),
             svgContainer: rootSvg,
             width,
             height,
             sideEffectGroup: this._sideEffectGroup,
-            parentContainer: this.parentContainer(),
+            parentContainer: el,
+            parentContainerDimensions: dimensions,
             xOffset: 0,
             yOffset: 0
         };
@@ -306,7 +292,7 @@ export default class VisualUnit {
         return {
             layers: this.layers().map(layer => layer.serialize()),
             config: this.config(),
-            axes: this.store().get('axes').map(axis => axis.serialize())
+            axes: this.axes().map(axis => axis.serialize())
         };
     }
 
@@ -314,6 +300,7 @@ export default class VisualUnit {
         if (mount.length) {
             this._mount = mount[0];
             this.render(mount[0]);
+            this.firebolt().mapActionsAndBehaviour();
             return this;
         }
         return this._mount;
@@ -678,14 +665,5 @@ export default class VisualUnit {
     removeLayersByType (type) {
         removeLayersBy('type', type);
         return this;
-    }
-
-    parentContainer (...container) {
-        if (container.length) {
-            this._parentContainer = container[0];
-
-            return this;
-        }
-        return this._parentContainer;
     }
 }

@@ -6,7 +6,8 @@ import {
     getDomainFromData,
     Symbols,
     FieldType,
-    ReservedFields
+    ReservedFields,
+    STATE_NAMESPACES
 } from 'muze-utils';
 import { defaultConfig } from './default-config';
 import { BaseLayer } from '../../base-layer';
@@ -259,12 +260,14 @@ export default class ArcLayer extends BaseLayer {
                             .style('fill', d => colorAxis.getColor(d.datum.colorVal))
                             .transition()
                             .duration(transition.duration)
+                            .on('end', this.registerAnimationDoneHook())
                             .attrTween('d', (...params) => tweenPie(path, rangeValueGetter, params))
                             .attr('class', (d, i) => {
                                 const individualClass = getIndividualClassName(d, i, transformedData, this);
                                 return `${qualClassName[0]}-path ${qualClassName[1]}-path-${d.index}
                                     ${individualClass}`;
-                            });
+                            })
+                            .on('end', this.registerAnimationDoneHook());
         };
         const consecutiveExits = [];
         let exitCounter = 0;
@@ -331,5 +334,8 @@ export default class ArcLayer extends BaseLayer {
         }
         return [];
     }
-}
 
+    getRenderProps () {
+        return [`${STATE_NAMESPACES.GROUP_GLOBAL_NAMESPACE}.domain.radius`];
+    }
+}

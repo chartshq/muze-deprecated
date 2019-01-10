@@ -2,14 +2,17 @@ import { GridLayout } from '@chartshq/layout';
 import { transactor, Store, getUniqueId, selectElement, STATE_NAMESPACES } from 'muze-utils';
 import { RETINAL } from '../constants';
 import TransactionSupport from '../transaction-support';
-import { getRenderDetails, prepareLayout } from './layout-maker';
+import { getRenderDetails, prepareLayout, renderLayout } from './layout-maker';
 import { localOptions, canvasOptions } from './local-options';
-import { renderComponents } from './renderer';
 import GroupFireBolt from './firebolt';
 import options from '../options';
 import { APP_INITIAL_STATE } from './app-state';
-import { initCanvas, setupChangeListener, createGroupState } from './helper';
-
+import { initCanvas,
+        setupChangeListener,
+        setLabelRotationForAxes,
+        createGroupState,
+        createLayoutManager,
+        setLayoutInfForUnits } from './helper';
 /**
  * Canvas is a logical component which houses a visualization by taking multiple variable in different encoding channel.
  * Canvas manages lifecycle of many other logical component and exposes one consistent interface for creation of chart.
@@ -50,6 +53,7 @@ export default class Canvas extends TransactionSupport {
         });
         this._composition.layout = new GridLayout();
         this._store = new Store(APP_INITIAL_STATE);
+
         // Setters and getters will be mounted on this. The object will be mutated.
         const namespace = STATE_NAMESPACES.CANVAS_LOCAL_NAMESPACE;
         const [, store] = transactor(this, options, this._store.model, {
@@ -71,6 +75,8 @@ export default class Canvas extends TransactionSupport {
         this.shape({});
         this.size({});
         setupChangeListener(this);
+         // init layoutManager
+        this._layoutManager = createLayoutManager();
     }
 
     /**
@@ -277,26 +283,78 @@ export default class Canvas extends TransactionSupport {
      * @internal
      */
     render () {
-        const mount = this.mount();
         const visGroup = this.composition().visualGroup;
+        const mount = this.mount();
+        // removeChild(mount);
         const lifeCycleManager = this.dependencies().lifeCycleManager;
         // Get render details including arrangement and measurement
-        const { components, layoutConfig, measurement } = getRenderDetails(this, mount);
+        const renderDetails = getRenderDetails(this, mount);
+        const promises = [];
 
         lifeCycleManager.notify({ client: this, action: 'beforedraw' });
         // Prepare the layout by triggering the matrix calculation
-        prepareLayout(this.layout(), components, layoutConfig, measurement);
+        prepareLayout(this.layout(), renderDetails);
+
+        this._layoutManager.dimension({
+            height: renderDetails.measurement.canvasHeight,
+            width: renderDetails.measurement.canvasWidth
+        });
+
+        this._layoutManager.renderAt(mount);
+
         // Render each component
-        renderComponents(this, components, layoutConfig, measurement);
+        renderLayout(this._layoutManager, this.layout(), renderDetails);
+
+        setLayoutInfForUnits(this);
+
+        // setLabelRotation
+        setLabelRotationForAxes(this);
+
         // Update life cycle
         lifeCycleManager.notify({ client: this, action: 'drawn' });
-        const promises = [];
-        visGroup.matrixInstance().value.each((el) => {
-            promises.push(el.valueOf().done());
+
+        this.composition().layout.viewInfo().viewMatricesInfo.matrices.center[1].forEach((cellsRow) => {
+            cellsRow.forEach((cell) => {
+                promises.push(cell.valueOf().done());
+            });
         });
+
         Promise.all(promises).then(() => {
             this._renderedResolve();
+            const animDonePromises = [];
+            visGroup.resolver().units().forEach((unitsRow) => {
+                unitsRow.forEach((unit) => {
+                    unit.layers().forEach((layer) => {
+                        animDonePromises.push(layer.animationDone());
+                    });
+                });
+            });
+
+            this.xAxes().forEach((axis) => {
+                axis.forEach((unitAxis) => {
+                    if (unitAxis.animationDone) {
+                        animDonePromises.push(unitAxis.animationDone());
+                    }
+                });
+            });
+
+            this.yAxes().forEach((axis) => {
+                axis.forEach((unitAxis) => {
+                    if (unitAxis.animationDone) {
+                        animDonePromises.push(unitAxis.animationDone());
+                    }
+                });
+            });
+
+            Promise.all(animDonePromises).then(() => {
+                this._animationEndCallback && this._animationEndCallback(this);
+            });
         });
+    }
+
+    onAnimationEnd (fn) {
+        this._animationEndCallback = fn;
+        return this;
     }
 
     /**

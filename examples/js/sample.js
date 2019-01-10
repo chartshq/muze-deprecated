@@ -4,38 +4,50 @@ const env = muze();
 const SpawnableSideEffect = muze.SideEffects.standards.SpawnableSideEffect;
 const DataModel = muze.DataModel;
 
-d3.json('../data/cars.json', (data) => {
-    const jsonData = data;
+d3.json('../data/by-election.json', (data) => {
     const schema = [
         {
-            name: 'Name',
-            type: 'dimension'
-        },
-        {
-            name: 'Maker',
-            type: 'dimension'
-        },
-        {
-            name: 'Miles_per_Gallon',
+            name: 'No.',
             type: 'measure',
-            defAggFn: 'avg'
+            defAggFn: 'count'
         },
+        {
+            name: 'Date',
+            type: 'dimension',
+            subtype: 'temporal',
+            format: '%d.%m.%Y'
+        },
+        {
+            name: 'Reason for Vacancy',
+            type: 'dimension'
+        }
+    ];
+    const env = muze();
+    const DataModel = muze.DataModel;
 
+    let rootData = new DataModel(data, schema);
+
+    rootData = rootData.calculateVariable(
         {
-            name: 'Displacement',
-            type: 'measure'
+            name: 'Binned_Year',
+            type: 'dimension'
         },
+        ['Date', (date) => {
+            const years = new Date(date).getFullYear();
+            const start = Math.ceil(+years / 10) * 10;
+            return `${start - 9}-${start}`;
+        }]
+    );
+    rootData = rootData.calculateVariable(
         {
-            name: 'Horsepower',
-            type: 'measure',
-            defAggFn: 'avg'
+            name: 'Binned_Year_axis',
+            type: 'dimension'
         },
+        ['Binned_Year', () => 1]
+    );
+    rootData = rootData.calculateVariable(
         {
-            name: 'Weight_in_lbs',
-            type: 'measure'
-        },
-        {
-            name: 'Acceleration',
+            name: 'counter',
             type: 'measure',
             defAggFn: 'sum'
         },
@@ -112,4 +124,3 @@ d3.json('../data/cars.json', (data) => {
                     //         }]);
                     //     }, 5000);
                     // }, 5000);
-

@@ -58,8 +58,8 @@
     "d3-shape": "^1.2.0",
     "d3-transition": "^1.1.1",
     "d3-voronoi": "^1.1.2",
-    "datamodel": "^2.0.2",
+    "datamodel": "git+ssh://git@github.com:chartshq/datamodel.git#develop",
     "fusioncharts-smartlabel": "^1.0.2",
-    "hyperdis": "^1.0.0"
+    "hyperdis": "^git+ssh://git@github.com:chartshq/hyperdis.git#feature/#1-fix-consecurive-next-listeners"
   }
 }

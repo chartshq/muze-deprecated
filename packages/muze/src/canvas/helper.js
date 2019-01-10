@@ -1,8 +1,9 @@
-import { isEqual, STATE_NAMESPACES } from 'muze-utils';
+import { isEqual, STATE_NAMESPACES, selectElement } from 'muze-utils';
 import { VisualGroup } from '@chartshq/visual-group';
 import { ROWS, COLUMNS, COLOR, SHAPE, SIZE, DETAIL, DATA, CONFIG }
     from '../constants';
 import { canvasOptions } from './local-options';
+import { LayoutManager } from '../../../layout/src/tree-layout';
 
 /**
  * Instantiate high level components. Canvas knows what all high level component it has.
@@ -16,6 +17,19 @@ export const initCanvas = (context) => {
     const reg = context._registry.components;
 
     return [new reg.VisualGroup(context._registry, context.dependencies())];
+};
+
+export const setLayoutInfForUnits = (context) => {
+    const layoutManager = context._layoutManager;
+    const boundBox = layoutManager.getComponent('grid').getBoundBox();
+    const valueMatrix = context.composition().visualGroup.matrixInstance().value;
+    const parentContainer = selectElement(`#${layoutManager.getRootNodeId()}`).node();
+    valueMatrix.each((cell) => {
+        cell.valueOf().parentContainerInf({
+            el: parentContainer,
+            dimensions: boundBox
+        });
+    });
 };
 
 /**
@@ -111,9 +125,54 @@ export const applyInteractionPolicy = (policies, firebolt) => {
     policies.forEach(policy => policy(valueMatrix, firebolt));
 };
 
+/**
+ * Sets the rotation for all x axes if any axis has the rotation config set in the
+ * entire view
+ *
+ * @param {Array} columns Column cells that contain the axes cells
+ */
+export const setLabelRotationForAxes = (context) => {
+    let rotation = 0;
+
+    const xAxes = context.xAxes() || [];
+
+    (() => {
+        for (let i = 0; i < xAxes.length; i++) {
+            for (let j = 0; j < xAxes[i].length; j++) {
+                if (xAxes[i][j].renderConfig().labels.rotation !== 0) {
+                    rotation = xAxes[i][j].renderConfig().labels.rotation;
+                    return;
+                }
+            }
+        }
+    })();
+
+    if (rotation) {
+        xAxes.forEach((axes) => {
+            axes.forEach((axis) => {
+                axis.renderConfig({ labels: { rotation } });
+                axis.smartTicks(axis.setTickConfig());
+            });
+        });
+    }
+};
+
 export const createGroupState = (context) => {
     const [globalState, localState] = VisualGroup.getState();
     const store = context._store;
     store.append('app.group', globalState);
     store.append('local.group', localState);
+};
+
+export const removeChild = (mount) => {
+    while (mount.firstChild) {
+        mount.removeChild(mount.firstChild);
+    }
+};
+
+export const createLayoutManager = () => {
+    const layoutManager = new LayoutManager({
+        className: 'muze-group-container'
+    });
+    return layoutManager;
 };

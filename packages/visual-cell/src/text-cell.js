@@ -238,6 +238,7 @@ class TextCell extends SimpleCell {
      */
     render (mount) {
         const availWidth = this.availWidth();
+        const availHeight = this.availHeight();
         const {
             margin,
             show,
@@ -253,8 +254,7 @@ class TextCell extends SimpleCell {
             const vAlign = verticalAlign || rotation ? 'middle' : 'top';
             const {
                 width,
-                height,
-                text
+                height
             } = this.smartText();
             const {
                 height: minHeightSpace
@@ -273,15 +273,17 @@ class TextCell extends SimpleCell {
             // Apply styles
             elem.style('text-align', textAlign);
             elem.style('display', 'inline');
-            elem.style('transform', rotation ? `translate(${height / 2}px, 
+            elem.style('transform', rotation ? `translate(${height / 2}px,
                 ${translation[vAlign]}px) rotate(-90deg)` : '');
             elem.style(WIDTH, availWidth ? `${availWidth}px` : '100%');
             [TOP, BOTTOM, LEFT, RIGHT].forEach((type) => {
                 elem.style(`padding-${type}`, `${margin[type]}px`);
             });
-
-            // Set the text as the innerHTML
-            elem.html(text);
+            elem.style('text-align', textAlign);
+            elem.style('display', 'inline');
+            // set the text as the innerHTML
+            this._dependencies.labelManager.setStyle(this._computedStyle);
+            elem.html(this._dependencies.labelManager.getSmartText(this.source(), availWidth, availHeight, true).text);
         }
         return this;
     }
