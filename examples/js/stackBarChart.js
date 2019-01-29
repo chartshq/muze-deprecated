@@ -1,5 +1,5 @@
 d3.json('../data/cars.json', (data) => {
-    schema = [
+    const schema = [
         {
             name: 'Name',
             type: 'dimension'
@@ -42,9 +42,7 @@ d3.json('../data/cars.json', (data) => {
             type: 'dimension',
             subtype: 'temporal',
             format: '%Y-%m-%d'
-
         }
-
     ];
 
     const DataModel = muze.DataModel;
@@ -54,26 +52,33 @@ d3.json('../data/cars.json', (data) => {
     const canvas = env.canvas();
 
     canvas
-  		.rows(['Horsepower']) // CountVehicle goes in y axis
-          .columns(['Year']) // Cylinders goes in x-axis
-          .color({
-              field: 'Origin'
-          })
+    .rows(['Horsepower']) // CountVehicle goes in y axis
+    .columns(['Cylinders']) // Cylinders goes in x-axis
+    .color({
+        field: 'Origin'
+    })
 
-        .data(rootData)
-  		.layers({ // Draw a bar plot, by default stack transform is used
-        	Acceleration: {
-            	mark: 'bar'
+    .data(rootData)
+    .layers([
+      // Draw a bar plot, by default stack transform is used
+        {
+            mark: 'arc',
+            encoding: {
+                radius: 'Acceleration'
+            }
         }
-  })
-                    .config({
-                        legend: {
-                            position: 'right'
-                        }
-                    })
-      	.width(700)
-      	.height(500)
-  		.title('Stacked bar chart', { position: 'top', align: 'right' })
-  		.subtitle('Count of cars per cylinder per origin', { position: 'top', align: 'right' })
-      	.mount('#chart'); // Set the chart mount point
+    ])
+    .config({
+        legend: {
+            position: 'right'
+        }
+    })
+    .width(700)
+    .height(500)
+    .title('Stacked bar chart', { position: 'top', align: 'right' })
+    .subtitle('Count of cars per cylinder per origin', {
+        position: 'top',
+        align: 'right'
+    })
+    .mount('#chart'); // Set the chart mount point
 });
