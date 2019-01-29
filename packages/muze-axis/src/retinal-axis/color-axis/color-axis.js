@@ -45,7 +45,7 @@ export default class ColorAxis extends RetinalAxis {
      *
      *
      * @static
-     * @returns
+     *
      * @memberof ColorAxis
      */
     static defaultConfig () {
@@ -56,7 +56,7 @@ export default class ColorAxis extends RetinalAxis {
      *
      *
      * @static
-     * @returns
+     *
      * @memberof ColorAxis
      */
     static type () {
@@ -67,7 +67,7 @@ export default class ColorAxis extends RetinalAxis {
      *
      *
      * @param {*} colorStrategy
-     * @returns
+     *
      * @memberof ColorAxis
      */
     createScale () {
@@ -87,7 +87,7 @@ export default class ColorAxis extends RetinalAxis {
      * @param {*} domainType
      * @param {*} rangeType
      * @param {*} schemeType
-     * @returns
+     *
      * @memberof ColorAxis
      */
     setStrategy (domainType, rangeType, schemeType) {
@@ -101,7 +101,7 @@ export default class ColorAxis extends RetinalAxis {
      *
      *
      * @param {*} domainVal
-     * @returns
+     *
      * @memberof ColorAxis
      */
     getHslString (hslColorArray) {
@@ -112,7 +112,7 @@ export default class ColorAxis extends RetinalAxis {
      *
      *
      * @param {*} domainVal
-     * @returns
+     *
      * @memberof ColorAxis
      */
     getColor (domainVal) {
@@ -123,7 +123,7 @@ export default class ColorAxis extends RetinalAxis {
      *
      *
      * @param {*} domainVal
-     * @returns
+     *
      * @memberof ColorAxis
      */
     getRawColor (domainVal) {
@@ -145,7 +145,7 @@ export default class ColorAxis extends RetinalAxis {
      *
      *
      * @param {*} [domain=[]]
-     * @returns
+     *
      * @memberof ColorAxis
      */
     updateDomain (domain = []) {

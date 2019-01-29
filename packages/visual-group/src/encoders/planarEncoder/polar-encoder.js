@@ -1,7 +1,10 @@
 import { layerFactory } from '@chartshq/visual-layer';
-import { mergeRecursive } from 'muze-utils';
+import { mergeRecursive, STATE_NAMESPACES } from 'muze-utils';
 import PlanarEncoder from './planar-encoder';
 import { RADIUS, ANGLE, SIZE, MEASURE, ARC, POLAR, COLOR } from '../../enums/constants';
+
+// import VisualEncoder from './visual-encoder';
+// import { RADIUS, ANGLE, SIZE, MEASURE, ARC, POLAR, COLOR } from '../enums/constants';
 /**
  *
  *
@@ -26,7 +29,7 @@ export default class PolarEncoder extends PlanarEncoder {
      *
      * @param {*} axesCreators
      * @param {*} fieldInfo
-     * @return
+     *
      * @memberof PolarEncoder
      */
     createAxis (axesCreators, fieldInfo) {
@@ -58,7 +61,7 @@ export default class PolarEncoder extends PlanarEncoder {
      *
      *
      * @param {*} fields
-     * @return
+     *
      * @memberof CartesianEncoder
      */
     getFacetsAndProjections (fields) {
@@ -95,6 +98,40 @@ export default class PolarEncoder extends PlanarEncoder {
             facets,
             projections
         };
+    }
+
+    unionUnitDomains (context) {
+        const store = context.store();
+        const domains = store.get(`${STATE_NAMESPACES.UNIT_GLOBAL_NAMESPACE}.domain`);
+        const domainProps = {
+            radius: [Infinity, -Infinity]
+        };
+        Object.values(domains).forEach((domainVal) => {
+            for (const key in domainVal) {
+                domainProps[key] = [Math.min(domainVal[key][0], domainProps[key][0]),
+                    Math.min(domainVal[key][1], domainProps[key][1])];
+            }
+        });
+        store.commit(`${STATE_NAMESPACES.GROUP_GLOBAL_NAMESPACE}.domain.radius`, domainProps.radius);
+    }
+
+    /**
+     *
+     *
+     *
+     * @memberof PolarEncoder
+     */
+    setCommonDomain () {
+        // No domain to be set
+        return this;
+    }
+
+    layers (...layers) {
+        if (layers.length) {
+            this._layers = layers[0];
+            return this;
+        }
+        return this._layers;
     }
 
     /**
@@ -139,7 +176,7 @@ export default class PolarEncoder extends PlanarEncoder {
         let colorField;
         const fields = [];
         const layers = this.layers();
-        const dataModel = dataModels.parentModel;
+        const dataModel = dataModels.groupedModel;
         const fieldsConfig = dataModel.getFieldsConfig();
         const domains = {};
         if (layers && layers[0]) {
@@ -177,7 +214,7 @@ export default class PolarEncoder extends PlanarEncoder {
      *
      * @param {*} fields
      * @param {*} userLayerConfig
-     * @return
+     *
      * @memberof PolarEncoder
      */
     getLayerConfig (fields, userLayerConfig) {
@@ -213,7 +250,7 @@ export default class PolarEncoder extends PlanarEncoder {
      *
      *
      * @param {*} layerArray
-     * @returns
+     *
      * @memberof PolarEncoder
      */
     serializeLayerConfig (layerArray) {

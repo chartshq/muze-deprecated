@@ -1,4 +1,7 @@
-import { HEIGHT, WIDTH, COLUMN, ROW } from '../enums/constants';
+import {
+    HEIGHT, WIDTH, COLUMN, ROW, HORIZONTAL, VERTICAL, HOLISTIC,
+    MAX_WIDTH_AVAIL_FOR_COL_MATRIX, COLUMN_MATRIX, MAX_HEIGHT_AVAIL_FOR_ROW_MATRIX, ROW_MATRIX
+} from '../enums/constants';
 
 /**
  * Gets measurement for an instance of visual matrix
@@ -31,13 +34,6 @@ export function setMatrixMeasurement (matrix, type, value) {
     }
 }
 
-/**
- *
- *
- * @param {*} matrix
- * @param {*} widths
- * @param {*} heights
- */
 const setAvailableSpace = (matrix, widths, heights) => {
     matrix.forEach((row, rIdx) => {
         row.forEach((placeholder, cIdx) => {
@@ -46,14 +42,6 @@ const setAvailableSpace = (matrix, widths, heights) => {
     });
 };
 
-/**
- *
- *
- * @param {*} layout
- * @param {*} matrix
- * @param {*} pointer
- * @returns
- */
 const setViewSpaces = (layout, pointerType, viewSpaces) => {
     let pointer = layout.config()[`${pointerType}Pointer`];
     if (viewSpaces.length - 1 < pointer) {
@@ -62,6 +50,70 @@ const setViewSpaces = (layout, pointerType, viewSpaces) => {
     }
     return pointer;
 };
+
+const paginationDetailsMap = {
+    column: {
+        maxMeasure: MAX_WIDTH_AVAIL_FOR_COL_MATRIX,
+        matrix: COLUMN_MATRIX,
+        measureType: WIDTH,
+        scrollType: HORIZONTAL
+    },
+    row: {
+        maxMeasure: MAX_HEIGHT_AVAIL_FOR_ROW_MATRIX,
+        matrix: ROW_MATRIX,
+        measureType: HEIGHT,
+        scrollType: VERTICAL
+    }
+};
+
+/**
+ * This method provides the required width/height in the different pagination stages.
+ * If the pagination is holistic, then only the max width/height will be provided for layouting
+ * If scroll is enabled, then the entire width/height shall be provided for layouting
+ * Note: width is required for scrolling the columns while height is required for scrolling rows
+ *
+ *
+ * @param {Layout} layout Layout instance required for configuration details
+ * @param {Object} measureDetails different measure details for row/column
+ * @param {number} maxMeasure maximum width/height present for column/row respectively
+ * @return {number} Provides the width/height based on which further calculation can occur
+ */
+const getMatrixMeasureForPagination = (layout, measureDetails, maxMeasure) => {
+    const {
+        pagination,
+        buffer
+    } = layout.config();
+    const {
+        matrix,
+        measureType,
+        scrollType
+    } = measureDetails;
+
+    switch (pagination) {
+    case HOLISTIC:
+        return maxMeasure;
+    default: {
+        const actualMeasure = getMatrixMeasurement(layout[matrix](), measureType);
+        if (actualMeasure > maxMeasure) {
+            layout.scrollInfo({ [scrollType]: true });
+        }
+        return Math.max(maxMeasure - buffer, actualMeasure);
+    }
+    }
+};
+
+/**
+ * This method uses the getMatrixMeasureForPagination function to calculate maximum measure
+ * depending on the layouting algorithm used
+ *
+ *
+ * @param {Layout} layout Layout instance required for configuration details
+ * @param {string} matrixType row/column
+ * @param {number} relatedMaxMeasure maximum width/height present for column/row respectively
+ * @return {number} Provides the width/height based on which further calculation can occur
+ */
+const paginationMeasureGetter = (layout, matrixType, relatedMaxMeasure) =>
+    getMatrixMeasureForPagination(layout, paginationDetailsMap[matrixType], relatedMaxMeasure);
 
 /**
  * Computes the measurements of space for all matrices in the
@@ -79,7 +131,9 @@ export const computeLayoutMeasurements = (layout) => {
         height
     } = layout.measurement();
     const {
-        border
+        border,
+        buffer,
+        pagination
     } = layout.config();
     const matrices = layout.matrices();
     const {
@@ -87,17 +141,23 @@ export const computeLayoutMeasurements = (layout) => {
         bottom
     } = matrices;
 
+    const actualBuffer = pagination === HOLISTIC ? 0 : buffer;
     // Get width of row matrix
     const rowMatrixWidth = getMatrixMeasurement(rowMatrix, WIDTH);
+    const maxRowMatrixWidth = Math.min(rowMatrixWidth, width / 2);
 
-    // Set width for column matrix
-
-       // Border adjustment for each cell in the central matrix
+    // Border adjustment for each cell in the central matrix
     const borderWidth = border.width;
 
-    const columnMatrixWidth = width - rowMatrixWidth - borderWidth;
-    setMatrixMeasurement(columnMatrix, WIDTH, columnMatrixWidth);
+    const maxWidthAvailableForColumnMatrix = width - maxRowMatrixWidth - border.width;
+    // Set width for column matrix
+    const columnMatrixWidth = paginationMeasureGetter(layout, COLUMN, maxWidthAvailableForColumnMatrix);
+
+    const maxColumnMatrixHeight = Math.min(columnMatrix.getLogicalSpace().height, height / 2);
+
+    columnMatrix.setAvailableSpace(columnMatrixWidth, maxColumnMatrixHeight);
     const columnViewPages = columnMatrix.getViewableSpaces();
+
     setViewSpaces(layout, COLUMN, columnViewPages);
 
     // Figuring out total space needed by current view space
@@ -106,14 +166,16 @@ export const computeLayoutMeasurements = (layout) => {
     // Getting height of column matrix
     const columnMatrixHeight = columnViewSpace.height.primary + columnViewSpace.height.secondary;
 
+    const maxHeightAvailableForRowMatrix = height - maxColumnMatrixHeight;
+
     // Set height for row matrix
-    const rowMatrixHeight = height - columnMatrixHeight;
+    const rowMatrixHeight = paginationMeasureGetter(layout, ROW, maxHeightAvailableForRowMatrix);
 
-    setMatrixMeasurement(rowMatrix, HEIGHT, rowMatrixHeight);
-
+    rowMatrix.setAvailableSpace(maxRowMatrixWidth, rowMatrixHeight);
     // Get heights of each cell of row matrix
     const rowViewableSpaces = rowMatrix.getViewableSpaces();
     setViewSpaces(layout, ROW, rowViewableSpaces);
+
     const rowHeights = [].concat(...rowViewableSpaces.map(e => e.rowHeights.primary));
     const rowWidthsPrimary = [].concat(...rowViewableSpaces.map(e => e.columnWidths.primary));
     const rowWidthsSecondary = [].concat(...rowViewableSpaces.map(e => e.columnWidths.secondary));
@@ -138,8 +200,11 @@ export const computeLayoutMeasurements = (layout) => {
     return {
         rowMatrixHeight,
         rowMatrixWidth,
+        maxHeightAvailableForRowMatrix: maxHeightAvailableForRowMatrix - actualBuffer,
+
         columnMatrixHeight,
-        columnMatrixWidth
+        columnMatrixWidth,
+        maxWidthAvailableForColumnMatrix: maxWidthAvailableForColumnMatrix - actualBuffer
     };
 };
 
@@ -156,8 +221,8 @@ export const getViewMatrices = (layout, rowPointer, columnPointer) => {
     const columnMatrix = layout.columnMatrix();
     const centerMatrix = layout.centerMatrix();
     const matrices = layout.matrices();
-    const rowMatrices = rowMatrix.getViewableData();
-    const columnMatrices = columnMatrix.getViewableData();
+    const rowMatrices = rowMatrix.getViewableMatrices();
+    const columnMatrices = columnMatrix.getViewableMatrices();
     const centralMatrixPointer = {
         row: 0,
         column: 0
@@ -196,35 +261,54 @@ export const getViewMatrices = (layout, rowPointer, columnPointer) => {
         columnPages: columnMatrices.length
     };
 };
+
+const measureSum = measureArr => measureArr.reduce((total, measure) => total + measure, 0);
 /**
  * Returns measurements of the cells of the current matrix
  *
  * @param {Object} layout instance of layout
  * @return {Object} returns the measurements for current view matrix
  */
-export const getViewMeasurements = (layout) => {
+export const getViewMeasurements = (layout, maxRowHeight, maxColWidth) => {
     const rowMatrix = layout.rowMatrix();
     const columnMatrix = layout.columnMatrix();
-    const {
-        width,
-        height
-    } = layout.measurement();
     const {
         columnPointer,
         rowPointer
     } = layout.config();
 
-    const rowMatrixWidth = rowMatrix.getViewableSpaces()[rowPointer].width;
-    const { primary: leftWidth, secondary: rightWidth } = rowMatrixWidth;
+    const rowSpaces = rowMatrix.getViewableSpaces()[rowPointer];
+    const colSpaces = columnMatrix.getViewableSpaces()[columnPointer];
 
-    const columnMatrixHeight = columnMatrix.getViewableSpaces()[columnPointer].height;
+    const {
+        rowHeights,
+        width: rowMatrixWidth
+    } = rowSpaces;
+    const {
+        columnWidths,
+        height: columnMatrixHeight
+    } = colSpaces;
+
+    const { primary: leftWidth, secondary: rightWidth } = rowMatrixWidth;
     const { primary: topHeight, secondary: bottomHeight } = columnMatrixHeight;
 
-    const centerHeight = height - (topHeight + bottomHeight);
-    const centerWidth = width - (leftWidth + rightWidth);
+    const centerHeight = measureSum(rowHeights.primary);
+    const centerWidth = measureSum(columnWidths.primary);
+    const viewWidth = [leftWidth, Math.min(centerWidth, maxColWidth), rightWidth];
+    const viewHeight = [topHeight, Math.min(centerHeight, maxRowHeight), bottomHeight];
 
     return {
-        viewWidth: [leftWidth, centerWidth, rightWidth],
-        viewHeight: [topHeight, centerHeight, bottomHeight]
+        viewWidth,
+        viewHeight,
+        actualCenterMeasures: {
+            height: centerHeight,
+            width: centerWidth
+        },
+        totalMeasures: {
+            width: measureSum(viewWidth),
+            height: measureSum(viewHeight)
+        },
+        unitHeights: rowHeights,
+        unitWidths: columnWidths
     };
 };

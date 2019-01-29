@@ -1,5 +1,5 @@
 /* global window, requestAnimationFrame, cancelAnimationFrame */
-import { FieldType, DimensionSubtype } from 'datamodel';
+import { FieldType, DimensionSubtype, DateTimeFormatter } from 'datamodel';
 import {
     axisLeft,
     axisRight,
@@ -58,7 +58,9 @@ import {
 } from 'd3-color';
 import { voronoi } from 'd3-voronoi';
 import Model from 'hyperdis';
+import { dataSelect } from './DataSystem';
 import * as STACK_CONFIG from './enums/stack-config';
+import { DM_OPERATION_GROUP } from './enums';
 
 const HTMLElement = window.HTMLElement;
 
@@ -190,7 +192,7 @@ const getDomainFromData = (data, fields, fieldType) => {
  */
 const unionDomain = (domains, fieldType) => {
     let domain;
-    domains = domains.filter(dom => dom.length);
+    domains = domains.filter(dom => dom && dom.length);
     if (fieldType === DimensionSubtype.CATEGORICAL) {
         domain = domain = [].concat(...domains);
     } else {
@@ -393,11 +395,10 @@ const unique = arr => ([...new Set(arr)]);
 
 /**
  * DESCRIPTION TODO
- * @todo
  *
  * @export
  * @param {Object} graph graph whose dependency order has to be generated
- * @return {Object} @todo
+ * @return {Object}
  */
 const getDependencyOrder = (graph) => {
     const dependencyOrder = [];
@@ -405,11 +406,10 @@ const getDependencyOrder = (graph) => {
     const keys = Object.keys(graph);
     /**
      * DESCRIPTION TODO
-     * @todo
      *
      * @export
-     * @param {Object} name @todo
-     * @return {Object} @todo
+     * @param {Object} name
+     * @return {Object}
      */
     const visit = (name) => {
         if (dependencyOrder.length === keys.length) {
@@ -488,6 +488,42 @@ const objectIterator = (obj, fn) => {
     }
 }
 
+const addListenerToNamespace = (namespaceInf, fn, context) => {
+    let key = namespaceInf.key;
+    const namespace = namespaceInf.namespace;
+    if (namespace) {
+        !context._listeners[namespace] && (context._listeners[namespace] = []);
+        if (!key) {
+            key = Object.keys(context._listeners[namespace]).length;
+        }
+        context._listeners[namespace][key] = fn;
+    } else {
+        key = Object.keys(context._listeners).length;
+        context._listeners[key] = fn;
+    }
+};
+
+/**
+ *
+ *
+ * @param {*} obj
+ * @param {*} fields
+ *
+ */
+const getObjProp = (obj, ...fields) => {
+    if (obj === undefined || obj === null) {
+        return obj;
+    }
+    let retObj = obj;
+    for (let i = 0, len = fields.length; i < len; i++) {
+        retObj = retObj[fields[i]];
+        if (retObj === undefined || retObj === null) {
+            break;
+        }
+    }
+    return retObj;
+};
+
 /**
  * Methods to handle changes to table configuration and reactivity are handled by this
  * class.
@@ -506,7 +542,7 @@ class Store {
     constructor (config) {
         // create reactive model
         this.model = Model.create(config);
-        this._listeners = [];
+        this._listeners = {};
     }
 
     /**
@@ -540,13 +576,13 @@ class Store {
      * @param {Function} callBack The callback to execute.
      * @memberof Store
      */
-    /* istanbul ignore next */registerChangeListener (propNames, callBack, instantCall) {
+    /* istanbul ignore next */registerChangeListener (propNames, callBack, instantCall, namespaceInf = {}) {
         let props = propNames;
         if (!Array.isArray(propNames)) {
             props = [propNames];
         }
         const fn = this.model.next(props, callBack, instantCall);
-        this._listeners.push(fn);
+        addListenerToNamespace(namespaceInf, fn, this);
         return this;
     }
     /**
@@ -557,13 +593,13 @@ class Store {
      * @param {Function} callBack The callback to execute.
      * @memberof Store
      */
-    /* istanbul ignore next */ registerImmediateListener (propNames, callBack, instantCall) {
+    /* istanbul ignore next */ registerImmediateListener (propNames, callBack, instantCall, namespaceInf = {}) {
         let props = propNames;
         if (!Array.isArray(propNames)) {
             props = [propNames];
         }
         const fn = this.model.on(props, callBack, instantCall);
-        this._listeners.push(fn);
+        addListenerToNamespace(namespaceInf, fn, this);
         return this;
     }
     /**
@@ -590,8 +626,27 @@ class Store {
         return this.model.calculatedProp(propName, callBack);
     }
 
+    append (propName, value) {
+        this.model.append(propName, value);
+        return this;
+    }
+
     unsubscribeAll () {
-        this._listeners.forEach(fn => fn());
+        Object.values(this._listeners).forEach(fn => fn());
+        return this;
+    }
+
+    unsubscribe (namespaceInf = {}) {
+        const { namespace, key } = namespaceInf;
+        const listeners = this._listeners[namespace];
+        if (key) {
+            const fn = getObjProp(listeners, key);
+            fn && fn();
+        } else {
+            Object.values(listeners).forEach(fn => fn());
+            this._listeners[namespace] = [];
+        }
+        return this;
     }
 }
 
@@ -628,90 +683,108 @@ const intSanitizer = (val) => {
  * @param {Object} holder an empty object on which the getters and setters will be mounted
  * @param {Object} options options config based on which the getters and setters are determined.
  * @param {Hyperdis} model optional model to attach the property. If not sent new moel is created.
- * @return {Array} @todo
+ * @return {Array}
  */
-const transactor = (holder, options, model) => {
+const transactor = (holder, options, model, namespaceInf = {}) => {
     let conf;
     const store = model && model instanceof Model ? model : Model.create({});
-
+    const stateProps = {};
     for (const prop in options) {
         if ({}.hasOwnProperty.call(options, prop)) {
             conf = options[prop];
-            if (!store.prop(prop)) {
-                store.append({ [prop]: conf.value });
+            const addAsMethod = conf.meta ? conf.meta.addAsMethod : true;
+            let nameSpaceProp;
+            const namespace = namespaceInf.namespace;
+            if (namespace) {
+                nameSpaceProp = `${namespace}.${prop}`;
+            } else {
+                nameSpaceProp = prop;
             }
-            holder[prop] = ((context, key, meta) => (...params) => {
-                let val;
-                let compareTo;
-                const paramsLen = params.length;
-                const prevVal = store.prop(prop);
-                if (paramsLen) {
-                    // If parameters are passed then it's a setter
-                    const spreadParams = meta && meta.spreadParams;
-                    val = params;
-                    const values = [];
-                    if (meta) {
-                        for (let i = 0; i < paramsLen; i++) {
-                            val = params[i];
-                            const sanitization = meta.sanitization && (spreadParams ? meta.sanitization[i] :
-                                meta.sanitization);
-                            const typeCheck = meta.typeCheck && (spreadParams ? meta.typeCheck[i] : meta.typeCheck);
-                            if (sanitization && typeof sanitization === 'function') {
-                                // Sanitize if required
-                                val = sanitization(val, prevVal, holder);
-                            }
+            if (!store.prop(`${nameSpaceProp}`)) {
+                stateProps[prop] = conf.value;
+            }
+            if (addAsMethod !== false) {
+                holder[prop] = ((context, meta, nsProp) => (...params) => {
+                    let val;
+                    let compareTo;
+                    const paramsLen = params.length;
+                    const prevVal = store.prop(nsProp);
+                    if (paramsLen) {
+                        // If parameters are passed then it's a setter
+                        const spreadParams = meta && meta.spreadParams;
+                        val = params;
+                        const values = [];
+                        if (meta) {
+                            for (let i = 0; i < paramsLen; i++) {
+                                val = params[i];
+                                const sanitization = meta.sanitization && (spreadParams ? meta.sanitization[i] :
+                                    meta.sanitization);
+                                const typeCheck = meta.typeCheck && (spreadParams ? meta.typeCheck[i] : meta.typeCheck);
+                                if (sanitization && typeof sanitization === 'function') {
+                                    // Sanitize if required
+                                    val = sanitization(val, prevVal, holder);
+                                }
 
-                            if (typeCheck) {
-                                // Checking if a setter is valid
-                                if (typeof typeCheck === 'function') {
-                                    let typeExpected = meta.typeExpected;
-                                    if (typeExpected && spreadParams) {
-                                        typeExpected = typeExpected[i];
-                                    }
-                                    if (typeExpected) {
-                                        compareTo = typeExpected;
-                                    } else {
-                                        compareTo = true;
-                                    }
+                                if (typeCheck) {
+                                    // Checking if a setter is valid
+                                    if (typeof typeCheck === 'function') {
+                                        let typeExpected = meta.typeExpected;
+                                        if (typeExpected && spreadParams) {
+                                            typeExpected = typeExpected[i];
+                                        }
+                                        if (typeExpected) {
+                                            compareTo = typeExpected;
+                                        } else {
+                                            compareTo = true;
+                                        }
 
-                                    if (typeCheck(val) === compareTo) {
-                                        values.push(val);
-                                    }
-                                } else if (typeof typeCheck === 'string') {
-                                    if (typeCheck === 'constructor') {
-                                        const typeExpected = spreadParams ? meta.typeExpected[i] : meta.typeExpected;
-                                        if (val && (val.constructor.name === typeExpected)) {
+                                        if (typeCheck(val) === compareTo) {
                                             values.push(val);
                                         }
+                                    } else if (typeof typeCheck === 'string') {
+                                        if (typeCheck === 'constructor') {
+                                            const typeExpected = spreadParams ? meta.typeExpected[i] :
+                                                meta.typeExpected;
+                                            if (val && (val.constructor.name === typeExpected)) {
+                                                values.push(val);
+                                            }
+                                        }
+                                    } else {
+                                        // context.prop(key, val);
+                                        values.push(val);
                                     }
                                 } else {
-                                    // context.prop(key, val);
                                     values.push(val);
                                 }
-                            } else {
-                                values.push(val);
                             }
+                            const preset = meta.preset;
+                            const oldValues = context.prop(nsProp);
+                            preset && preset(values[0], holder);
+                            if (spreadParams) {
+                                oldValues.forEach((value, i) => {
+                                    if (values[i] === undefined) {
+                                        values[i] = value;
+                                    }
+                                });
+                            }
+                            values.length && context.prop(nsProp, spreadParams ? values : values[0]);
+                        } else {
+                            context.prop(nsProp, spreadParams ? val : val[0]);
                         }
-                        const preset = meta.preset;
-                        const oldValues = context.prop(key);
-                        preset && preset(values[0], holder);
-                        if (spreadParams) {
-                            oldValues.forEach((value, i) => {
-                                if (values[i] === undefined) {
-                                    values[i] = value;
-                                }
-                            });
-                        }
-                        values.length && context.prop(key, spreadParams ? values : values[0]);
-                    } else {
-                        context.prop(key, spreadParams ? val : val[0]);
+                        return holder;
                     }
-                    return holder;
-                }
-            // No parameters are passed hence its a getter
-                return context.prop(key);
-            })(store, prop, conf.meta);
+                // No parameters are passed hence its a getter
+                    return context.prop(nsProp);
+                })(store, conf.meta, nameSpaceProp);
+            }
         }
+    }
+
+    if (namespaceInf.namespace === undefined) {
+        store.append(stateProps);
+    } else {
+        const namespace = namespaceInf.namespace;
+        store.append(namespace, stateProps);
     }
 
     return [holder, store];
@@ -727,9 +800,13 @@ const generateGetterSetters = (context, props) => {
     Object.entries(props).forEach((propInfo) => {
         const prop = propInfo[0];
         const typeChecker = propInfo[1].typeChecker;
+        const defVal = propInfo[1].defaultValue;
         const sanitization = propInfo[1].sanitization;
         const prototype = context.constructor.prototype;
         if (!(Object.hasOwnProperty.call(prototype, prop))) {
+            if (defVal) {
+                context[`_${prop}`] = defVal;
+            }
             context[prop] = (...params) => {
                 if (params.length) {
                     let value = params[0];
@@ -763,7 +840,7 @@ const getArraySum = (arr, prop) => arr.reduce((total, elem) => {
  *
  * @param {*} arr1
  * @param {*} arr2
- * @returns
+ *
  */
 const arraysEqual = (arr1, arr2) => {
     if (arr1.length !== arr2.length) { return false; }
@@ -832,6 +909,28 @@ const mergeRecursive = (source, sink) => {
         }
     }
     return source;
+};
+
+/**
+ * Creates a selection set from a data set with corresponding attributes
+ *
+ * @export
+ * @param {Selection} sel contains previous selection
+ * @param {Object} appendObj Object to be appended
+ * @param {Array} data Data based on which the selection is entered/updated/removed
+ * @param {Object} [attrs={}] Attributes to be set on the data
+ * @return {Selection} Merged selection
+ */
+const createSelection = (sel, appendObj, data, idFn) => {
+    let selection = sel || dataSelect([]);
+
+    selection = selection.data(data, idFn);
+
+    const enter = selection.enter().append(appendObj);
+    const mergedSelection = enter.merge(selection);
+
+    selection.exit() && selection.exit().remove();
+    return mergedSelection;
 };
 
 const interpolateArray = (data, fitCount) => {
@@ -1061,7 +1160,7 @@ const detectColor = (col) => {
  *
  * @param {*} model
  * @param {*} propModel
- * @returns
+ *
  */
 const filterPropagationModel = (model, propModel, measures) => {
     const { data, schema } = propModel.getData();
@@ -1125,7 +1224,7 @@ const assembleModelFromIdentifiers = (model, identifiers) => {
  *
  * @param {*} dataModel
  * @param {*} criteria
- * @returns
+ *
  */
 const getDataModelFromRange = (dataModel, criteria, mode) => {
     if (criteria === null) {
@@ -1152,7 +1251,7 @@ const getDataModelFromRange = (dataModel, criteria, mode) => {
  *
  * @param {*} dataModel
  * @param {*} identifiers
- * @returns
+ *
  */
 const getDataModelFromIdentifiers = (dataModel, identifiers, mode) => {
     let filteredDataModel;
@@ -1189,15 +1288,22 @@ const getDataModelFromIdentifiers = (dataModel, identifiers, mode) => {
  * @param {*} context
  * @param {*} listenerMap
  */
-const registerListeners = (context, listenerMap) => {
-    const propListenerMap = listenerMap(context);
+const registerListeners = (context, listenerMap, ...params) => {
+    const propListenerMap = listenerMap(context, ...params);
     for (const key in propListenerMap) {
         if ({}.hasOwnProperty.call(propListenerMap, key)) {
+            const namespace = params[0];
+            let ns = null;
+            if (namespace) {
+                ns = namespace.local;
+            }
             const mapObj = propListenerMap[key];
             const propType = mapObj.type;
             const props = mapObj.props;
             const listenerFn = mapObj.listener;
-            context.store()[propType](props, listenerFn);
+            context.store()[propType](props, listenerFn, false, {
+                namespace: ns
+            });
         }
     }
 };
@@ -1206,29 +1312,8 @@ const isValidValue = value => !isNaN(value) && value !== -Infinity && value !== 
 /**
  *
  *
- * @param {*} obj
- * @param {*} fields
- * @returns
- */
-const getObjProp = (obj, ...fields) => {
-    if (obj === undefined || obj === null) {
-        return obj;
-    }
-    let retObj = obj;
-    for (let i = 0, len = fields.length; i < len; i++) {
-        retObj = retObj[fields[i]];
-        if (retObj === undefined || retObj === null) {
-            break;
-        }
-    }
-    return retObj;
-};
-
-/**
- *
- *
  * @param {*} str
- * @returns
+ *
  */
 const escapeHTML = (str) => {
     const htmlEscapes = {
@@ -1386,6 +1471,41 @@ const getSmallestDiff = (points) => {
     return minDiff;
 };
 
+const timeFormats = {
+    millisecond: '%A, %b %e, %H:%M:%S.%L',
+    second: '%A, %b %e, %H:%M:%S',
+    minute: '%A, %b %e, %H:%M',
+    hour: '%A, %b %e, %H:%M',
+    day: '%A, %b %e, %Y',
+    month: '%B %Y',
+    year: '%Y'
+};
+
+const timeDurations = [
+    ['millisecond', 'second', 'minute', 'hour', 'day', 'month', 'year'],
+    [1, 1000, 60000, 3600000, 86400000, 2592000000, 31536000000]
+];
+
+const getNearestInterval = (interval) => {
+    const index = getClosestIndexOf(timeDurations[1], interval);
+    return timeDurations[0][index];
+};
+
+const formatTemporal = (value, interval) => {
+    const nearestInterval = getNearestInterval(interval);
+    return DateTimeFormatter.formatAs(value, timeFormats[nearestInterval]);
+};
+
+const temporalFields = (dataModel) => {
+    const filteredFields = {};
+    Object.entries(dataModel.getFieldspace().getDimension()).forEach(([fieldName, fieldObj]) => {
+        if (fieldObj.subtype() === DimensionSubtype.TEMPORAL) {
+            filteredFields[fieldName] = fieldObj;
+        }
+    });
+    return filteredFields;
+};
+
 const require = (lookupWhat, lookupDetails) => ({
     resolvable: (store) => {
         const lookupTarget = store[lookupWhat];
@@ -1405,6 +1525,36 @@ const nextAnimFrame = window.requestAnimationFrame || window.webkitRequestAnimat
     function (callback) {
         setTimeout(callback, 16);
     };
+
+const retrieveNearestGroupByReducers = (dataModel, ...measureFieldNames) => {
+    let nearestReducers = {};
+    let next = dataModel;
+    do {
+        const derivations = next.getDerivations();
+        if (derivations) {
+            const groupDerivation = derivations.reverse().find(derivation => derivation.op === DM_OPERATION_GROUP);
+            if (groupDerivation) {
+                nearestReducers = groupDerivation.criteria || {};
+                break;
+            }
+        }
+    } while (next = next.getParent());
+
+    const filteredReducers = {};
+    const measures = dataModel.getFieldspace().getMeasure();
+    measureFieldNames.forEach((measureName) => {
+        if (nearestReducers[measureName]) {
+            filteredReducers[measureName] = nearestReducers[measureName];
+        } else {
+            const measureField = measures[measureName];
+            if (measureField) {
+                filteredReducers[measureName] = measureField.defAggFn();
+            }
+        }
+    });
+
+    return filteredReducers;
+};
 
 export {
     require,
@@ -1476,5 +1626,9 @@ export {
     assembleModelFromIdentifiers,
     isValidValue,
     hslInterpolator,
-    getSmallestDiff
+    getSmallestDiff,
+    formatTemporal,
+    createSelection,
+    temporalFields,
+    retrieveNearestGroupByReducers
 };

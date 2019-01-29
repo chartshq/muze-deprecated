@@ -1,10 +1,13 @@
 import * as scales from './scales';
 import * as colorSchemes from './color-schemes';
+import * as STATE_NAMESPACES from './enums/namespace';
 
 export {
     ReservedFields,
     CommonProps
 } from './enums';
+
+export { STATE_NAMESPACES };
 
 export {
     scales,
@@ -81,7 +84,11 @@ export {
     pathInterpolators,
     hslInterpolator,
     getSmallestDiff,
-    require
+    require,
+    formatTemporal,
+    createSelection,
+    temporalFields,
+    retrieveNearestGroupByReducers
 } from './common-utils';
 
 export {
@@ -112,3 +119,4 @@ export { dataSelect, DataObject } from './DataSystem';
 export { default as LifeCycleManager } from './lifecycle-manager';
 
 export { DimensionSubtype, FieldType, MeasureSubtype, DateTimeFormatter, default as DataModel } from 'datamodel';
+

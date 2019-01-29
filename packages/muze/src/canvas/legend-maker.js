@@ -8,7 +8,7 @@ import {
  *
  * @param {*} legendConfig
  * @param {*} canvases
- * @returns
+ *
  */
 export const legendCreator = (canvas) => {
     let LegendCls;
@@ -20,7 +20,7 @@ export const legendCreator = (canvas) => {
         const scaleType = axisInfo[0];
         const scaleProps = canvas[scaleType]();
 
-        if (scaleProps.field) {
+        if (scaleProps.field && scale) {
             const {
                 type,
                 step
@@ -42,7 +42,7 @@ export const legendCreator = (canvas) => {
  * @param {*} canvases
  * @param {*} measurement
  * @param {*} prevLegends
- * @returns
+ *
  */
 export const legendInitializer = (legendConfig, canvas, measurement, prevLegends) => {
     const legends = [];
@@ -93,6 +93,7 @@ export const legendInitializer = (legendConfig, canvas, measurement, prevLegends
             [PADDING, BORDER, MARGIN].forEach((e) => {
                 legendMeasures[e] = config[e];
             });
+
             legend.scale(scale)
                             .title(title)
                             .fieldName(fieldName)
@@ -115,7 +116,7 @@ export const legendInitializer = (legendConfig, canvas, measurement, prevLegends
  * @param {*} legendConfig
  * @param {*} availableHeight
  * @param {*} availableWidth
- * @returns
+ *
  */
 export const getLegendSpace = (legends, legendConfig, availableHeight, availableWidth) => {
     const legendMeasures = legends.map(legendInfo => legendInfo.legend.measurement());
@@ -154,7 +155,7 @@ export const getLegendSpace = (legends, legendConfig, availableHeight, available
  *
  * @param {*} context
  * @param {*} headerHeight
- * @returns
+ *
  */
 export const createLegend = (context, headerHeight, height, width) => {
     const measurement = {

@@ -2,6 +2,8 @@ import { TIME } from '../../enums/scale-type';
 import { axisOrientationMap, BOTTOM, TOP } from '../../enums/axis-orientation';
 import { DOMAIN } from '../../enums/constants';
 import ContinousAxis from './continous-axis';
+import { getValidDomain } from '../common-helper';
+import { setContinousAxisDomain } from './helper';
 
 /**
  *
@@ -100,7 +102,7 @@ export default class TimeAxis extends ContinousAxis {
         return smartTicks;
     }
 
-    /**
+   /**
      *
      *
      * @returns
@@ -115,10 +117,22 @@ export default class TimeAxis extends ContinousAxis {
 
         if (axisClass) {
             const axis = axisClass(this.scale());
-            this.formatter = this.getTickFormatter(tickFormat);
+            this.formatter = this.getTickFormatter({ tickFormat });
             return axis;
         }
         return null;
+    }
+
+      /**
+     *
+     *
+     * @param {*} diff
+     *
+     * @memberof TimeAxis
+     */
+    minDiff (diff) {
+        this._minDiff = Math.min(this._minDiff, diff);
+        return this;
     }
 
     /**
@@ -129,6 +143,18 @@ export default class TimeAxis extends ContinousAxis {
      */
     getTickValues () {
         return this.scale().ticks();
+    }
+
+    getTickFormatter (value) {
+        const { tickFormat } = value;
+
+        if (tickFormat) {
+            return (ticks) => {
+                const rawTicks = ticks.map(t => t.getTime());
+                return (val, i) => tickFormat(val, val.getTime(), i, rawTicks);
+            };
+        }
+        return () => text => this.scale().tickFormat()(text);
     }
 
     /**
@@ -170,30 +196,23 @@ export default class TimeAxis extends ContinousAxis {
         return this;
     }
 
-    /**
+        /**
      *
      *
      * @param {*} d
-     * @returns
+     *
      * @memberof SimpleAxis
      */
     domain (domain) {
         if (domain) {
-            const { nice } = this.config();
-
-            if (domain.length && domain[0] === domain[1]) {
-                domain = [0, +domain[0] * 2];
-            }
-            this.scale().domain(domain);
-            nice && this.scale().nice();
-            this._domain = this.scale().domain();
-            this.smartTicks(this.setTickConfig());
-            this.store().commit(DOMAIN, this._domain);
+            domain = getValidDomain(this, domain);
+            setContinousAxisDomain(this, domain);
+            this.setAxisComponentDimensions();
             this.logicalSpace(null);
             return this;
-        } return this._domain;
+        }
+        return this._domain;
     }
-
     /**
      *
      *

@@ -15,7 +15,7 @@ export default class RetinalEncoder extends VisualEncoder {
      *
      *
      * @param {*} axesCreators
-     * @return
+     *
      * @memberof RetinalEncoder
      */
     createAxis (axesCreators) {
@@ -32,7 +32,7 @@ export default class RetinalEncoder extends VisualEncoder {
      *
      *
      * @static
-     * @return
+     *
      * @memberof RetinalEncoder
      */
     static type () {
@@ -44,7 +44,7 @@ export default class RetinalEncoder extends VisualEncoder {
      *
      * @param {*} fields
      * @param {*} userLayerConfig
-     * @return
+     *
      * @memberof RetinalEncoder
      */
     getLayerConfig (fields, userLayerConfig) {
@@ -77,7 +77,7 @@ export default class RetinalEncoder extends VisualEncoder {
      *
      *
      * @param {*} context
-     * @return
+     *
      * @memberof RetinalEncoder
      */
     setCommonDomain (context) {

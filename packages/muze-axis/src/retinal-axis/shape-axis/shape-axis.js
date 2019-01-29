@@ -44,7 +44,7 @@ export default class ShapeAxis extends RetinalAxis {
      *
      *
      * @static
-     * @returns
+     *
      * @memberof ColorAxis
      */
     static defaultConfig () {
@@ -55,7 +55,7 @@ export default class ShapeAxis extends RetinalAxis {
      *
      *
      * @static
-     * @returns
+     *
      * @memberof ColorAxis
      */
     static type () {
@@ -65,8 +65,8 @@ export default class ShapeAxis extends RetinalAxis {
     /**
      *
      *
-     * @param {*} domainVal
-     * @returns
+     * @param {*} value
+     *
      * @memberof ShapeAxis
      */
     getShape (domainVal) {

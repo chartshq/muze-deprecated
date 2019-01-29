@@ -1,11 +1,17 @@
 import { AxisOrientation } from '@chartshq/muze-axis';
-import { getObjProp, FieldType } from 'muze-utils';
+import {
+    getObjProp,
+    FieldType,
+    STATE_NAMESPACES,
+    retrieveNearestGroupByReducers,
+    mergeRecursive,
+    createSelection
+} from 'muze-utils';
 import { getMatrixModel } from './matrix-model';
 import {
     getCellKey,
     isDistributionEqual,
     mutateAxesFromMap,
-    createSelection,
     getFieldsFromSuppliedLayers,
     extractFields
 } from './group-utils';
@@ -35,7 +41,7 @@ const updateCells = (resolver, facets, geomCell) => {
  * @param {*} datamodel
  * @param {*} fieldInfo
  * @param {*} facets
- * @return
+ *
  */
 export const createValueCells = (context, datamodel, fieldInfo, facets) => {
     const {
@@ -86,6 +92,7 @@ export const createValueCells = (context, datamodel, fieldInfo, facets) => {
         y: rowFields,
         x: columnFields
     };
+
     const allFacets = [
         [...facets.rowFacets[0], ...facets.colFacets[0]],
         [...facets.rowFacets[1], ...facets.colFacets[1]]
@@ -196,20 +203,22 @@ const createTextCells = (selection, headers, cells, labelManager) => createSelec
  * @param {*} selectionObj
  * @param {*} cells
  * @param {*} labelManager
- * @return
+ *
  */
 const headerPlaceholderGn = (context, selectionObj, cells, labelManager) => {
     const {
         axis,
         keys,
         type,
-        facetConfig
+        facet
     } = context;
     const counter = axis.length / keys.length;
     const selectionKeys = keys.length ? axis.map((d, i) => keys[Math.floor(i / counter)]) : [];
-    return createSelection(selectionObj[`${type}Headers`], keySet => keySet, selectionKeys, (keySet, i) =>
-        `${keySet.join(',')}-${i}`).map(keySet => createTextCells(null, keySet, cells, labelManager)
-                        .map((cell, k, i) => cell.source(keySet[i]).config(facetConfig || {})));
+
+    return createSelection(selectionObj[`${type}Headers`], keySet => keySet, selectionKeys,
+        (keySet, i) => `${keySet.join(',')}-${i}`)
+                    .map(keySet => createTextCells(null, keySet, cells, labelManager)
+                                    .map((cell, k, i) => cell.source(keySet[i]).config(facet)));
 };
 
 /**
@@ -229,7 +238,7 @@ const generatePlaceholders = (context, cells, labelManager) => {
         fields,
         facetsAndProjections,
         selection,
-        facetConfig,
+        facet,
         encoders
     } = context;
     const {
@@ -299,11 +308,12 @@ const generatePlaceholders = (context, cells, labelManager) => {
             let headers = [];
             if (index < 2) {
                 hContext.keys = keys;
-                hContext.facetConfig = facetConfig.rows;
+                hContext.facet = facet.rows;
                 headers = headerPlaceholderGn(hContext, selectionObj, cells, labelManager);
             } else {
-                hContext.facetConfig = facetConfig.columns;
+                hContext.facet = facet.columns;
                 hContext.keys = keys[0].map((key, i) => keys.map(e => e[i]));
+
                 headers = headerPlaceholderGn(hContext, selectionObj, cells, labelManager);
             }
             selectionObj[`${type}Headers`] = headers;
@@ -332,7 +342,7 @@ export const generateMatrices = (context, matrices, cells, labelManager) => {
         normalizedColumns,
         selection,
         axisFrom,
-        facetConfig,
+        facet,
         encoders
      } = context;
     const placeholderContext = {
@@ -344,7 +354,7 @@ export const generateMatrices = (context, matrices, cells, labelManager) => {
         facetsAndProjections,
         selection,
         axisFrom,
-        facetConfig,
+        facet,
         encoders
     };
     // Generate placeholders for all matrices
@@ -361,8 +371,13 @@ export const generateMatrices = (context, matrices, cells, labelManager) => {
     } = selectionObj;
     const [rowPrime, rowSec, colPrime, colSec] = [rowsPrimary, rowsSecondary, columnsPrimary, columnsSecondary]
         .map(d => (d ? d.getObjects() : []));
-    const [leftFacets, rightFacets] = [leftHeaders, rightHeaders].map(e => (e ? e.getObjects()
-                    .map(f => f.getObjects()) : []));
+    const [leftFacets, rightFacets] = [leftHeaders, rightHeaders]
+        .map(e => (e ? e.getObjects()
+                        .map(f => f.getObjects()) : []));
+    let rowPriority = rowSec.length ? 1 : -1;
+    rowPrime.length && rowPriority++;
+    let colPriority = colSec.length ? 1 : -1;
+    colPrime.length && colPriority++;
 
     // Compute left matrix using left headers and the axes on the rows
     let leftMatrix = leftFacets.length ? leftFacets.map((d, i) => {
@@ -422,7 +437,9 @@ export const generateMatrices = (context, matrices, cells, labelManager) => {
     return {
         rows: [leftMatrix, rightMatrix],
         columns: [topMatrix, bottomMatrix],
-        selectionObj
+        selectionObj,
+        colPriority,
+        rowPriority
     };
 };
 
@@ -466,7 +483,7 @@ export const computeMatrices = (context, config) => {
         fieldMap,
         otherEncodings,
         encoders,
-        facetConfig: globalConfig.facetConfig || {},
+        facet: globalConfig.facet || {},
         axisFrom: globalConfig.axisFrom || {},
         selection
     };
@@ -487,8 +504,8 @@ export const computeMatrices = (context, config) => {
     resolver.resetSimpleAxes();
 
     const {
-            entryCellMap
-        } = resolver.cacheMaps();
+        entryCellMap
+    } = resolver.cacheMaps();
     const newCacheMap = {
         exitCellMap: entryCellMap,
         entryCellMap: new Map()
@@ -514,8 +531,11 @@ export const computeMatrices = (context, config) => {
         const dimensions = allFields.filter(field =>
             fieldsConfig[field] && fieldsConfig[field].def.type === FieldType.DIMENSION);
         const aggregationFns = groupBy.measures;
+        const measureNames = Object.keys(datamodel.getFieldspace().getMeasure());
+        const nearestAggFns = retrieveNearestGroupByReducers(datamodel, ...measureNames);
+        const resolvedAggFns = mergeRecursive(nearestAggFns, aggregationFns);
 
-        groupedModel = datamodel.groupBy(dimensions.length ? dimensions : [''], aggregationFns).project(allFields);
+        groupedModel = datamodel.groupBy(dimensions.length ? dimensions : [''], resolvedAggFns).project(allFields);
     }
 
     // return a callback function to create the cells from the matrix
@@ -528,7 +548,6 @@ export const computeMatrices = (context, config) => {
     });
     resolver.cacheMaps().exitCellMap.clear();
     resolver.valueMatrix(valueMatrixInfo.matrix);
-    resolver.createUnits(componentRegistry, config);
 
     const { xAxes, yAxes } = mutateAxesFromMap(resolver.cacheMaps(), resolver.axes());
 
@@ -536,13 +555,32 @@ export const computeMatrices = (context, config) => {
         x: xAxes,
         y: yAxes
     });
+    const store = resolver.store();
+
+    [xAxes, yAxes].forEach((axesArr, type) => {
+        const stateProps = {};
+        axesArr = axesArr || [];
+        axesArr.forEach((axes, idx) => {
+            axes.forEach((axis, axisIndex) => {
+                stateProps[`${idx}${axisIndex}`] = null;
+            });
+        });
+        store.append(`${STATE_NAMESPACES.GROUP_GLOBAL_NAMESPACE}.domain.${type ? 'y' : 'x'}`, stateProps);
+    });
+    resolver.createUnits(componentRegistry, config);
 
     const matrices = {
         valuesMatrix: valueMatrixInfo,
         axesMatrix: resolver.axes()
     };
     // Create all matrices
-    const { rows, columns, selectionObj } = generateMatrices(matrixGnContext, matrices, cells, labelManager);
+    const {
+        rows,
+        columns,
+        selectionObj,
+        rowPriority,
+        colPriority
+    } = generateMatrices(matrixGnContext, matrices, cells, labelManager);
 
     resolver.rowMatrix(rows);
     resolver.columnMatrix(columns);
@@ -553,6 +591,10 @@ export const computeMatrices = (context, config) => {
         values: resolver.valueMatrix(),
         isColumnSizeEqual,
         isRowSizeEqual,
+        priority: {
+            row: rowPriority,
+            col: colPriority
+        },
         selection: selectionObj,
         dataModels: {
             groupedModel,

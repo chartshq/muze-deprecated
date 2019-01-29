@@ -2,17 +2,19 @@ import ContinousAxis from './continous-axis';
 import { BOTTOM, TOP } from '../../enums/axis-orientation';
 import { LINEAR, LOG, POW } from '../../enums/scale-type';
 import { LogInterpolator, PowInterpolator, LinearInterpolator } from './interpolators';
-import { DOMAIN } from '../../enums/constants';
 import {
-    getTickLabelInfo
+    getTickLabelInfo,
+    getValidDomain
 } from '../common-helper';
 import {
-    getNumberOfTicks
+    getNumberOfTicks, setContinousAxisDomain,
+    setFixedBaseline
 } from './helper';
 import {
-    renderAxis,
-    setFixedBaseline
+    renderAxis
+
 } from '../../axis-renderer';
+import { spaceSetter } from '../space-setter';
 
 export const interpolatorMap = {
     [LOG]: LogInterpolator,
@@ -76,22 +78,23 @@ export default class NumericAxis extends ContinousAxis {
      *
      *
      * @param {*} d
-     * @returns
+     *
      * @memberof SimpleAxis
      */
     domain (domain) {
-        if (domain && domain.length) {
-            const { nice } = this.config();
-            if (domain.length && domain[0] === domain[1]) {
-                domain = [0, +domain[0] * 2];
+        if (domain) {
+            if (Array.isArray(domain) && domain.length) {
+                domain = getValidDomain(this, domain);
+                domain = this._interpolator.sanitizeDomain(domain);
+                setContinousAxisDomain(this, domain);
+                this.setAxisComponentDimensions();
+                this.logicalSpace(null);
+            } else {
+                this._domain = [];
             }
-            this.scale().domain(domain);
-            nice && this.scale().nice();
-            this._domain = this.scale().domain();
-            this.store().commit(DOMAIN, this._domain);
-            this.logicalSpace(null);
             return this;
-        } return this._domain;
+        }
+        return this._domain;
     }
 
     /**
@@ -103,30 +106,56 @@ export default class NumericAxis extends ContinousAxis {
      * @memberof AxisCell
      */
     setAvailableSpace (width = 0, height, padding, isOffset) {
+        let labelConfig = {};
         const {
-            left,
-            right,
-            top,
-            bottom
-        } = padding;
-        const {
-            orientation,
-            fixedBaseline
-        } = this.config();
-        const { tickLabelDim } = this.getAxisDimensions();
-        this.availableSpace({ width, height });
+           orientation
+       } = this.config();
+
+        this.availableSpace({ width, height, padding });
 
         if (orientation === TOP || orientation === BOTTOM) {
-            const labelSpace = tickLabelDim.width;
-            this.range([(fixedBaseline ? 0 : (labelSpace / 2)) + left, width - right - labelSpace / 2]);
-            const axisHeight = this.getLogicalSpace().height;
-            isOffset && this.config({ yOffset: Math.max(axisHeight, height) });
+            labelConfig = spaceSetter(this, { isOffset }).continous.x();
         } else {
-            const labelSpace = tickLabelDim.height;
-            this.range([height - bottom - (fixedBaseline ? 1 : (labelSpace / 2)), labelSpace / 2 + top]);
-            const axisWidth = this.getLogicalSpace().width;
-            isOffset && this.config({ xOffset: Math.max(axisWidth, width) });
+            labelConfig = spaceSetter(this, { isOffset }).continous.y();
         }
+
+        // Set config
+        this.renderConfig({
+            labels: labelConfig
+        });
+
+        this.setTickConfig();
+        this.getTickSize();
+        return this;
+    }
+
+    /**
+     *
+     *
+     * @param {*} tickValues
+     *
+     * @memberof SimpleAxis
+     */
+    setTickConfig () {
+        const {
+            tickValues
+        } = this.config();
+        const {
+            showInnerTicks
+        } = this.renderConfig();
+        const axis = this.axis();
+
+        if (!showInnerTicks) {
+            axis.tickValues([]);
+            return this;
+        }
+
+        if (tickValues) {
+            tickValues instanceof Array && this.axis().tickValues(tickValues);
+            return this;
+        }
+        axis.tickValues(this.getTickValues());
+
         return this;
     }
 
@@ -173,13 +202,13 @@ export default class NumericAxis extends ContinousAxis {
         return this;
     }
 
-    getTickFormatter (tickFormat) {
-        const numberFormat = this.config().numberFormat;
-        if (tickFormat) {
-            return ticks => (val, i) => tickFormat(numberFormat(val), i, ticks);
-        }
-        return () => val => numberFormat(val);
-    }
+    // getTickFormatter (tickFormat) {
+    //     const numberFormat = this.config().numberFormat;
+    //     if (tickFormat) {
+    //         return ticks => (val, i) => tickFormat(numberFormat(val), i, ticks);
+    //     }
+    //     return () => val => numberFormat(val);
+    // }
 
     /**
      *
@@ -217,9 +246,10 @@ export default class NumericAxis extends ContinousAxis {
      */
     /* istanbul ignore next */render () {
         if (this.mount()) {
+            setFixedBaseline(this);
+
             renderAxis(this);
             // set fixed baseline
-            setFixedBaseline(this);
         }
         return this;
     }

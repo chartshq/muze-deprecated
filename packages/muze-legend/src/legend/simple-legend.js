@@ -87,7 +87,7 @@ export default class SimpleLegend {
      *
      *
      * @static
-     * @returns
+     *
      * @memberof SimpleLegend
      */
     static defaultConfig () {
@@ -98,7 +98,7 @@ export default class SimpleLegend {
      *
      *
      * @static
-     * @returns
+     *
      * @memberof SimpleLegend
      */
     static defaultMeasurement () {
@@ -121,7 +121,7 @@ export default class SimpleLegend {
     /**
      *
      *
-     * @return
+     *
      * @memberof Legend
      */
     elemType () {
@@ -131,7 +131,7 @@ export default class SimpleLegend {
     /**
      *
      *
-     * @return
+     *
      * @memberof Legend
      */
     mount (...params) {
@@ -148,7 +148,7 @@ export default class SimpleLegend {
      *
      * @param {*} effPadding
      * @param {*} align
-     * @return
+     *
      * @memberof Legend
      */
     getLabelSpaces () {
@@ -170,14 +170,14 @@ export default class SimpleLegend {
      */
     setLegendMeasures () {
         const {
-           width,
-           height,
-           maxWidth,
-           maxHeight,
-           padding,
-           margin,
-           border
-       } = this.measurement();
+            width,
+            height,
+            maxWidth,
+            maxHeight,
+            padding,
+            margin,
+            border
+        } = this.measurement();
         const {
             align
         } = this.config();
@@ -195,7 +195,6 @@ export default class SimpleLegend {
 
         // Get space occupied by labels
         const labelSpaces = this.getLabelSpaces(effPadding, align);
-
         const {
             totalHeight, totalWidth, itemSpaces, iconSpaces, maxItemSpaces, maxIconWidth
         } = computeItemSpaces(this.config(),
@@ -225,7 +224,7 @@ export default class SimpleLegend {
      */
     getTitleSpace () {
         this._labelManager.setStyle(getSmartComputedStyle(selectElement('body'),
-                                                 `${this.config().classPrefix}-legend-title`));
+                                                `${this.config().classPrefix}-legend-title`));
         return this._labelManager.getOriSize(this.title().text ? this.title().text : '');
     }
 
@@ -237,11 +236,12 @@ export default class SimpleLegend {
      * @memberof Legend
      */
     renderTitle (container) {
-        const { titleSpaces, border, padding, width } = this.measurement();
+        const { titleSpaces, border, padding, width, maxWidth } = this.measurement();
         const { borderStyle, borderColor } = this.config();
         titleCreator(selectElement(container), this.title(), {
             height: titleSpaces.height,
             width,
+            maxWidth,
             border,
             padding,
             borderStyle,
@@ -265,13 +265,13 @@ export default class SimpleLegend {
             borderColor
         } = this.config();
         const {
-           maxWidth,
-           maxHeight,
-           width,
-           height,
-           margin,
-           border
-       } = this.measurement();
+            maxWidth,
+            maxHeight,
+            width,
+            height,
+            margin,
+            border
+        } = this.measurement();
         const legendContainer = makeElement(selectElement(this.mount()), 'div', [1], `${classPrefix}-legend-box`);
 
         legendContainer.classed(`${classPrefix}-legend-box-${this._id}`, true);
@@ -293,7 +293,7 @@ export default class SimpleLegend {
      *
      *
      * @param {*} data
-     * @returns
+     *
      * @memberof StepLegend
      */
     getCriteriaFromData (data) {

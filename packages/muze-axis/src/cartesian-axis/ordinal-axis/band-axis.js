@@ -3,7 +3,8 @@ import { BAND } from '../../enums/scale-type';
 import { DOMAIN } from '../../enums/constants';
 import { TOP, BOTTOM } from '../../enums/axis-orientation';
 import { calculateBandSpace } from './helper';
-import { setOffset } from '../common-helper';
+import { setOffset, getRotatedSpaces } from '../common-helper';
+import { spaceSetter } from '../space-setter';
 
 export default class BandAxis extends SimpleAxis {
 
@@ -59,62 +60,34 @@ export default class BandAxis extends SimpleAxis {
         return this;
     }
 
-    /**
+     /**
+     * This method is used to set the space availiable to render
+     * the SimpleCell.
      *
-     *
-     * @param {*} d
-     * @returns
-     * @memberof SimpleAxis
+     * @param {number} width The width of SimpleCell.
+     * @param {number} height The height of SimpleCell.
+     * @memberof AxisCell
      */
-    domain (...domain) {
-        if (domain.length) {
-            this.scale().domain(domain[0]);
-            this._domain = this.scale().domain();
-            this.smartTicks(this.setTickConfig());
-            this.store().commit(DOMAIN, this._domain);
-            this.logicalSpace(null);
-            return this;
-        }
-        return this._domain;
-    }
-
-    /**
-     *
-     *
-     * @param {*} width
-     * @param {*} height
-     * @param {*} padding
-     * @param {*} isOffset
-     * @memberof BandAxis
-     */
-    setAvailableSpace (width, height, padding, isOffset) {
+    setAvailableSpace (width = 0, height, padding, isOffset) {
+        let labelConfig = {};
         const {
-            left,
-            right,
-            top,
-            bottom
-        } = padding;
-        const {
-            orientation,
-            showAxisName,
-            axisNamePadding
-        } = this.config();
-        const { axisLabelDim } = this.getAxisDimensions();
-        const { height: axisDimHeight } = axisLabelDim;
+           orientation
+       } = this.config();
 
-        this.availableSpace({ width, height });
+        this.availableSpace({ width, height, padding });
+
         if (orientation === TOP || orientation === BOTTOM) {
-            // Set x axis range
-            this.range([0, width - left - right]);
-            const axisHeight = this.getLogicalSpace().height - (showAxisName === false ?
-                (axisDimHeight + axisNamePadding) : 0);
-            isOffset && this.config({ yOffset: Math.max(axisHeight, height) });
+            labelConfig = spaceSetter(this, { isOffset }).band.x();
         } else {
-            // Set y axis range
-            this.range([height - bottom, top]);
-            const axisWidth = this.getLogicalSpace().width - (showAxisName === false ? axisDimHeight : 0);
-            isOffset && this.config({ xOffset: Math.max(axisWidth, width) });
+            labelConfig = spaceSetter(this, { isOffset }).band.y();
         }
+
+        // Set config
+        this.renderConfig({
+            labels: labelConfig
+        });
+
+        this.setTickConfig();
         return this;
     }
 
@@ -131,27 +104,42 @@ export default class BandAxis extends SimpleAxis {
     /**
      *
      *
-     * @returns
+     *
      * @memberof BandAxis
      */
     setTickConfig () {
         let smartTicks = '';
         let smartlabel;
-        const { maxWidth, maxHeight, tickFormat } = this.config();
+        const domain = this.domain();
         const { labelManager } = this._dependencies;
-        const domain = this.axis().scale().domain();
+        const { tickValues, padding } = this.config();
+        const { labels } = this.renderConfig();
+        const { height: availHeight, width: availWidth, noWrap } = this.maxTickSpaces();
+        const { width, height } = getRotatedSpaces(labels.rotation, availWidth, availHeight);
 
-        smartTicks = domain;
-        const tickFormatter = tickFormat || (val => val);
+        tickValues && this.axis().tickValues(tickValues);
+        smartTicks = tickValues || domain;
+
+        // set the style on the shared label manager instance
+        labelManager.setStyle(this._tickLabelStyle);
+
+        // Update padding between plots
+        if (typeof padding === 'number' && padding >= 0 && padding <= 1) {
+            this.scale().padding(padding);
+        }
 
         if (domain && domain.length) {
-            smartTicks = domain.map((d, i) => {
+            const values = tickValues || domain;
+            const tickFormatter = this._tickFormatter(values);
+            smartTicks = values.map((d, i) => {
                 labelManager.useEllipsesOnOverflow(true);
-                smartlabel = labelManager.getSmartText(tickFormatter(d, i, domain), maxWidth, maxHeight);
+
+                smartlabel = labelManager.getSmartText(tickFormatter(d, i), width, height, noWrap);
                 return labelManager.constructor.textToLines(smartlabel);
             });
         }
-        return smartTicks;
+        this.smartTicks(smartTicks);
+        return this;
     }
 
 /**

@@ -10,6 +10,17 @@ export const sanitizeDomain = (domain, context) => {
     return domain;
 };
 
+export const getRotatedSpaces = (rotation = 0, width, height) => {
+    let rotatedHeight = height;
+    let rotatedWidth = width;
+    if (rotation) {
+        const angle = ((rotation || 0) * Math.PI) / 180;
+        rotatedWidth = Math.abs(height * Math.sin(angle)) + Math.abs(width * Math.cos(angle));
+        rotatedHeight = Math.abs(width * Math.sin(angle)) + Math.abs(height * Math.cos(angle));
+    }
+    return { width: rotatedWidth, height: rotatedHeight };
+};
+
 export const getTickFormatter = (tickFormat, numberFormat) => {
     if (tickFormat) {
         return ticks => (val, i) => tickFormat(numberFormat(val), i, ticks);
@@ -83,7 +94,8 @@ export const computeAxisDimensions = (context) => {
     const {
         largestLabelDim,
         axisTickLabels,
-        smartTick
+        smartTick,
+        allLabelLengths
     } = getTickLabelInfo(context);
     const { height: labelHeight, width: labelWidth } = largestLabelDim;
     // get the domain of axis
@@ -111,7 +123,8 @@ export const computeAxisDimensions = (context) => {
         tickLabelDim,
         axisLabelDim: labelManager.getOriSize(name),
         largestLabelDim,
-        axisTickLabels
+        axisTickLabels,
+        allTickDimensions: allLabelLengths
     };
 };
 
@@ -245,6 +258,57 @@ export const getVerticalAxisSpace = (context, axisDimensions, config) => {
     };
 };
 
+export const getAxisComponentDimensions = (context) => {
+    let largestTick = '';
+    let largestTickDimensions = { width: 0, height: 0 };
+    let smartTick = {};
+    let axisTicks;
+    const allTickDimensions = [];
+    const scale = context.scale();
+    const { showAxisName } = context.renderConfig();
+    const { tickValues, name } = context.config();
+    const { labelManager } = context.dependencies();
+    const labelFunc = scale.ticks || scale.quantile || scale.domain;
+
+    // set the style on the shared label manager instance
+    labelManager.setStyle(context._tickLabelStyle);
+
+    // get the values along the domain
+    axisTicks = tickValues || labelFunc();
+
+    // Get the tick labels
+    axisTicks = axisTicks.map((originalLabel, i) => {
+        const label = context.getFormattedText(originalLabel, i, axisTicks);
+
+    // convert to string for quant values
+        const tickDimensions = labelManager.getOriSize(label);
+
+    // Get spaces for all labels
+        allTickDimensions.push(tickDimensions);
+
+    // Getting largest label
+        if (tickDimensions.width > largestTickDimensions.width) {
+            largestTick = label;
+            smartTick = context.smartTicks() ? context.smartTicks()[i] : {};
+            largestTickDimensions = tickDimensions;
+        }
+        return label;
+    });
+
+    labelManager.setStyle(context._axisNameStyle);
+    const axisNameDimensions = showAxisName ? labelManager.getOriSize(name) : { width: 0, height: 0 };
+
+    return {
+        axisNameDimensions,
+        largestTick,
+        largestTickDimensions,
+        allTickDimensions,
+        axisTicks,
+        smartTick,
+        tickSize: context.getTickSize()
+    };
+};
+
  /**
      * Calculates the logical space of the axis
      * @return {Object} Width and height occupied by the axis.
@@ -290,5 +354,37 @@ export const calculateBandSpace = (context) => {
         width,
         height
     };
+};
+
+/**
+ * Checks if any of the properties have changed between two objects
+ * @param {Object} obj first object
+ * @param {Object} obj1 second object
+ * @param {Array} properties properties to be compared between two objects
+ *
+ * @return {Boolean} boolean value
+ */
+export const hasAxesConfigChanged = (obj = {}, obj1 = {}, properties) => {
+    if (!Object.keys(obj).length || !Object.keys(obj1).length) {
+        return false;
+    }
+    return properties.some(key => obj[key] !== obj1[key]);
+};
+
+/**
+ * Overwrites domain with user defined domain (if present)
+ * @param {Object} context reference to current axes
+ * @param {Array} domain default domain
+ *
+ * @return {Array} domain
+ */
+export const getValidDomain = (context, domain) => {
+    const { domain: userDom } = context.config();
+
+    if (userDom) {
+        domain = userDom;
+    }
+
+    return domain;
 };
 

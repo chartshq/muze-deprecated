@@ -37,6 +37,26 @@ export default class PlanarEncoder extends VisualEncoder {
         return this._fieldInfo;
     }
 
+    /**
+     *
+     *
+     * @param {*} datamodel
+     * @param {*} config
+     *
+     * @memberof VisualEncoder
+     */
+    fieldSanitizer (datamodel, config) {
+        this.fieldInfo(transformFields(datamodel, config));
+        return this.fieldInfo();
+    }
+
+    /**
+     *
+     *
+     * @param {*} params
+     *
+     * @memberof VisualEncoder
+     */
     axisFrom (...params) {
         if (params.length) {
             this._axisFrom = params[0];
@@ -45,6 +65,13 @@ export default class PlanarEncoder extends VisualEncoder {
         return this._axisFrom;
     }
 
+    /**
+     *
+     *
+     * @param {*} params
+     *
+     * @memberof VisualEncoder
+     */
     headerFrom (...params) {
         if (params.length) {
             this._headerFrom = params[0];
@@ -53,7 +80,14 @@ export default class PlanarEncoder extends VisualEncoder {
         return this.__headerFrom;
     }
 
-    setAxesAndHeaders (fields, axisFrom = {}) {
+    /**
+     *
+     *
+     * @param {*} axisFrom
+     *
+     * @memberof CartesianEncoder
+     */
+    setAxisAndHeaders (axisFrom = {}, fields) {
         const [rowHeader, rowAxis] = getHeaderAxisFrom(ROW, fields.rows, axisFrom);
         const [colHeader, colAxis] = getHeaderAxisFrom(COLUMN, fields.columns, axisFrom);
 

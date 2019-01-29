@@ -44,7 +44,7 @@ export default class SizeAxis extends RetinalAxis {
      * @param {*} domainType
      * @param {*} rangeType
      * @param {*} schemeType
-     * @returns
+     *
      * @memberof ColorAxis
      */
     setStrategy (domainType, rangeType) {
@@ -54,7 +54,7 @@ export default class SizeAxis extends RetinalAxis {
     /**
      *
      *
-     * @returns
+     *
      * @memberof SizeAxis
      */
     createScale () {
@@ -71,7 +71,7 @@ export default class SizeAxis extends RetinalAxis {
      *
      *
      * @static
-     * @returns
+     *
      * @memberof ColorAxis
      */
     static defaultConfig () {
@@ -82,7 +82,7 @@ export default class SizeAxis extends RetinalAxis {
      *
      *
      * @static
-     * @returns
+     *
      * @memberof ColorAxis
      */
     static type () {
@@ -93,7 +93,7 @@ export default class SizeAxis extends RetinalAxis {
      *
      *
      * @param {*} domainVal
-     * @returns
+     *
      * @memberof SizeAxis
      */
     getSize (domainVal = 0) {
