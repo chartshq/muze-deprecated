@@ -80,22 +80,28 @@ export const spaceSetter = (context, spaceConfig) => {
     return {
         time: {
             x: () => {
-                const tickShifter = tickDimWidth / 2;
+                let tickShifter = tickDimWidth / 2;
 
                 setAxisRange(context, 'y', adjustRange(minDiff,
-                    [tickShifter, availWidth - left - right - tickShifter], domain, orientation),
-                        isOffset ? availHeight : null);
+                [tickShifter, availWidth - left - right - tickShifter], domain, orientation),
+                isOffset ? availHeight : null);
 
-                tickInterval = ((availWidth) / context.getTickValues().length)
-                                     - minTickDistance.width;
+                tickInterval = ((availWidth - tickShifter * 2) / context.getTickValues().length)
+                - minTickDistance.width;
 
-                heightForTicks = availHeight - axisNameDimensions.availHeight - tickSize - namePadding;
+                heightForTicks = availHeight - axisNameHeight - tickSize - namePadding;
 
                 if (tickInterval < minTickSpace.width && rotation !== 0) {
-                    // set smart ticks and rotation config
+                // set smart ticks and rotation config
                     labelConfig.rotation = labels.rotation === null ? -90 : rotation;
+                    tickShifter = tickDimHeight / 2;
+                    setAxisRange(context, 'y', adjustRange(minDiff,
+                [tickShifter, availWidth - left - right - tickShifter], domain, orientation),
+                isOffset ? availHeight : null);
+                    tickInterval = ((availWidth - tickShifter * 2) / context.getTickValues().length)
+                - minTickDistance.width;
 
-                    // Remove ticks if not enough height
+                // Remove ticks if not enough height
                     if (tickInterval < minTickSpace.height) {
                         heightForTicks = availHeight;
                         tickInterval = minTickSpace.height;
@@ -111,6 +117,7 @@ export const spaceSetter = (context, spaceConfig) => {
                     height: heightForTicks,
                     noWrap: rotation !== null
                 });
+
                 return labelConfig;
             },
             y: () => {

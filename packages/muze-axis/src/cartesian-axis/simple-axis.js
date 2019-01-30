@@ -1,6 +1,5 @@
 import {
     ERROR_MSG,
-    Store,
     mergeRecursive,
     getSmartComputedStyle,
     selectElement,
@@ -12,14 +11,10 @@ import { axisOrientationMap } from '../enums/axis-orientation';
 import { defaultConfig } from '../cartesian-axis/default-config';
 import { renderAxis } from '../axis-renderer';
 import { BAND } from '../enums/constants';
-import { spaceSetter } from './space-setter';
 import {
     getAxisComponentDimensions,
     computeAxisDimensions,
-    calculateContinousSpace,
-    setOffset,
-    getValidDomain,
-    registerChangeListeners
+    getValidDomain
 } from './common-helper';
 import { PROPS } from './props';
 

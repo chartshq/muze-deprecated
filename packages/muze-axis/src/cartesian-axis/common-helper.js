@@ -65,7 +65,7 @@ export const getTickLabelInfo = (context) => {
         // Getting largest label
         if (temp.length > largestLabel.length) {
             largestLabel = temp;
-            smartTick = context.smartTicks() ? context.smartTicks()[i] : {};
+            smartTick = context.smartTicks().length ? context.smartTicks()[i] : allLabelLengths[i];
             labelProps = allLabelLengths[i];
         }
         return label;

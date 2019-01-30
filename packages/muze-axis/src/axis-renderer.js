@@ -3,7 +3,7 @@
  */
 import { selectElement, makeElement, angleToRadian } from 'muze-utils';
 import * as AxisOrientation from './enums/axis-orientation';
-import { LINEAR, HIDDEN, BOTTOM, TOP, LEFT, RIGHT } from './enums/constants';
+import { LINEAR, HIDDEN, BOTTOM, TOP } from './enums/constants';
 
 /**
  *
