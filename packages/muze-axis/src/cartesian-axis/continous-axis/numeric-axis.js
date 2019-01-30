@@ -1,5 +1,5 @@
 import ContinousAxis from './continous-axis';
-import { BOTTOM, TOP } from '../../enums/axis-orientation';
+import { BOTTOM, TOP, NUMERIC } from '../../enums/constants';
 import { LINEAR, LOG, POW } from '../../enums/scale-type';
 import { LogInterpolator, PowInterpolator, LinearInterpolator } from './interpolators';
 import {
@@ -14,7 +14,6 @@ import {
     renderAxis
 
 } from '../../axis-renderer';
-import { spaceSetter } from '../space-setter';
 
 export const interpolatorMap = {
     [LOG]: LogInterpolator,
@@ -23,6 +22,7 @@ export const interpolatorMap = {
 };
 
 export default class NumericAxis extends ContinousAxis {
+
     constructor (config, dependencies) {
         config.tickFormat = config.tickFormat || (val => val);
         super(config, dependencies);
@@ -36,7 +36,7 @@ export default class NumericAxis extends ContinousAxis {
      * @memberof ContinousAxis
      */
     static type () {
-        return LINEAR;
+        return NUMERIC;
     }
 
     /**
@@ -95,38 +95,6 @@ export default class NumericAxis extends ContinousAxis {
             return this;
         }
         return this._domain;
-    }
-
-    /**
-     * This method is used to set the space availiable to render
-     * the SimpleCell.
-     *
-     * @param {number} width The width of SimpleCell.
-     * @param {number} height The height of SimpleCell.
-     * @memberof AxisCell
-     */
-    setAvailableSpace (width = 0, height, padding, isOffset) {
-        let labelConfig = {};
-        const {
-           orientation
-       } = this.config();
-
-        this.availableSpace({ width, height, padding });
-
-        if (orientation === TOP || orientation === BOTTOM) {
-            labelConfig = spaceSetter(this, { isOffset }).continous.x();
-        } else {
-            labelConfig = spaceSetter(this, { isOffset }).continous.y();
-        }
-
-        // Set config
-        this.renderConfig({
-            labels: labelConfig
-        });
-
-        this.setTickConfig();
-        this.getTickSize();
-        return this;
     }
 
     /**
@@ -201,14 +169,6 @@ export default class NumericAxis extends ContinousAxis {
         axis.tickValues(this.getTickValues());
         return this;
     }
-
-    // getTickFormatter (tickFormat) {
-    //     const numberFormat = this.config().numberFormat;
-    //     if (tickFormat) {
-    //         return ticks => (val, i) => tickFormat(numberFormat(val), i, ticks);
-    //     }
-    //     return () => val => numberFormat(val);
-    // }
 
     /**
      *

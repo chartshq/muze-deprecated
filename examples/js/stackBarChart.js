@@ -62,7 +62,7 @@ d3.json('../data/cars.json', (data) => {
     .layers([
       // Draw a bar plot, by default stack transform is used
         {
-            mark: 'arc',
+            // mark: 'arc',
             encoding: {
                 radius: 'Acceleration'
             }
@@ -71,6 +71,11 @@ d3.json('../data/cars.json', (data) => {
     .config({
         legend: {
             position: 'right'
+        },
+        axes: {
+            x: {
+                padding: 0.1
+            }
         }
     })
     .width(700)

@@ -21,10 +21,6 @@ export default class ContinousAxis extends SimpleAxis {
         throw new Error(ERROR_MSG.INTERFACE_IMPL);
     }
 
-    setAvailableSpace () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
      /**
      * Gets the space occupied by the axis
      *
@@ -60,6 +56,12 @@ export default class ContinousAxis extends SimpleAxis {
 
     getMinTickDifference () {
         return getSmallestDiff(this.config().tickValues);
+    }
+
+    setAvailableSpace (...params) {
+        super.setAvailableSpace(...params);
+        this.getTickSize();
+        return this;
     }
 
 }

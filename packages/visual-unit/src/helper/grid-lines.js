@@ -6,7 +6,8 @@ import {
     GRID_LINE,
     GRID_BAND_PARENT_GROUP_CLASS,
     GRID_LINE_PARENT_GROUP_CLASS,
-    GRID_PARENT_GROUP
+    GRID_PARENT_GROUP,
+    NUMERIC
 } from '../enums/constants';
 
 const { BAR_LAYER, TICK_LAYER } = LAYER_TYPES;
@@ -70,7 +71,7 @@ const getLayerDefinition = (context, axes, type, orientation) => {
 };
 
 const getDefaultVisibilty = (show, axis) => {
-    if (axis.constructor.type() === LINEAR) {
+    if (axis.constructor.type() === NUMERIC) {
         return show;
     }
     return false;
@@ -171,6 +172,7 @@ export const createGridLineLayer = (context) => {
         const definitions = getGridLayerDefinitions(context, config, type);
 
         const sel = `_${type}Selection`;
+
         context[sel] = createGridLines(context[sel], () => {
             const inst = layerFactory.getLayerInstance({ mark });
             inst.dependencies(context._layerDeps);

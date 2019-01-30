@@ -16,6 +16,7 @@ export const SIZE = 'size';
 
 export const DOMAIN = 'domain';
 export const BAND = 'band';
+export const TIME = 'temporal';
 export const HIDDEN = 'hidden';
 export const NUMBER = 'number';
 export const BOTTOM = 'bottom';
@@ -27,4 +28,5 @@ export const RGB = 'rgb';
 export const HEX = 'hex';
 export const HSLA = 'hsla';
 export const HSL = 'hsl';
+export const NUMERIC = 'numeric';
 

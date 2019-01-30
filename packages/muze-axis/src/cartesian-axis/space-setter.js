@@ -1,4 +1,5 @@
 import { BOTTOM, TOP } from '../enums/axis-orientation';
+import { TIME, BAND, NUMERIC } from '../enums/constants';
 
 const setAxisRange = (context, type, rangeBounds, offset) => {
     context.range(rangeBounds);
@@ -78,9 +79,9 @@ export const spaceSetter = (context, spaceConfig) => {
     const axisNameHeight = axisLabelDim.height;
 
     return {
-        time: {
+        [TIME]: {
             x: () => {
-                let tickShifter = tickDimWidth / 2;
+                const tickShifter = tickDimWidth / 2;
 
                 setAxisRange(context, 'y', adjustRange(minDiff,
                 [tickShifter, availWidth - left - right - tickShifter], domain, orientation),
@@ -94,12 +95,6 @@ export const spaceSetter = (context, spaceConfig) => {
                 if (tickInterval < minTickSpace.width && rotation !== 0) {
                 // set smart ticks and rotation config
                     labelConfig.rotation = labels.rotation === null ? -90 : rotation;
-                    tickShifter = tickDimHeight / 2;
-                    setAxisRange(context, 'y', adjustRange(minDiff,
-                [tickShifter, availWidth - left - right - tickShifter], domain, orientation),
-                isOffset ? availHeight : null);
-                    tickInterval = ((availWidth - tickShifter * 2) / context.getTickValues().length)
-                - minTickDistance.width;
 
                 // Remove ticks if not enough height
                     if (tickInterval < minTickSpace.height) {
@@ -144,7 +139,7 @@ export const spaceSetter = (context, spaceConfig) => {
                 return labelConfig;
             }
         },
-        band: {
+        [BAND]: {
             x: () => {
                 setAxisRange(context, 'y', [0, availWidth - left - right], isOffset ? availHeight : null);
                 const range = context.range();
@@ -204,7 +199,7 @@ export const spaceSetter = (context, spaceConfig) => {
                 return labelConfig;
             }
         },
-        continous: {
+        [NUMERIC]: {
             x: () => {
                 labelConfig.smartTicks = false;
                 const tickShifter = tickLabelDim.width / 2;

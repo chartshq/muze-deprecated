@@ -10,7 +10,8 @@ import { createScale } from '../scale-creator';
 import { axisOrientationMap } from '../enums/axis-orientation';
 import { defaultConfig } from '../cartesian-axis/default-config';
 import { renderAxis } from '../axis-renderer';
-import { BAND } from '../enums/constants';
+import { TOP, BOTTOM } from '../enums/constants';
+import { spaceSetter } from './space-setter';
 import {
     getAxisComponentDimensions,
     computeAxisDimensions,
@@ -65,84 +66,6 @@ export default class SimpleAxis {
         return defaultConfig;
     }
 
-     /**
-     *
-     *
-     * @param {*} axisTickLabels
-     * @param {*} labelWidth
-     * @returns
-     * @memberof SimpleAxis
-     */
-    setRotationConfig () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
-    getTickValues () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
-    setAvailableSpace () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
-    getLogicalSpace () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
-    setTickConfig () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
-    resetDomain () {
-        this._domain = [];
-        return this;
-    }
-
-    /**
-     *
-     *
-     * @returns
-     * @memberof SimpleAxis
-     */
-    getTickSize () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
-    getMinTickDifference () {
-
-    }
-
-    setFixedBaseline () {
-        throw new Error(ERROR_MSG.INTERFACE_IMPL);
-    }
-
-    domain (...domain) {
-        if (domain.length) {
-            let domainValue = domain[0];
-            domainValue = getValidDomain(this, domainValue);
-            this.scale().domain(domainValue);
-            this._domain = this.scale().domain();
-            this.setAxisComponentDimensions();
-            this.logicalSpace(null);
-            return this;
-        }
-        return this._domain;
-    }
-
-    setAxisComponentDimensions () {
-        this.axisComponentDimensions(getAxisComponentDimensions(this));
-    }
-
-    /**
-     *
-     *
-     *
-     * @memberof SimpleAxis
-     */
-    dependencies () {
-        return this._dependencies;
-    }
-
     /**
      *
      *
@@ -167,6 +90,94 @@ export default class SimpleAxis {
         });
 
         return scale;
+    }
+
+    setRotationConfig () {
+        throw new Error(ERROR_MSG.INTERFACE_IMPL);
+    }
+
+    getTickValues () {
+        throw new Error(ERROR_MSG.INTERFACE_IMPL);
+    }
+
+     /**
+     * This method is used to set the space availiable to render
+     * the SimpleCell.
+     *
+     * @param {number} width The width of SimpleCell.
+     * @param {number} height The height of SimpleCell.
+     * @memberof AxisCell
+     */
+    setAvailableSpace (width = 0, height, padding, isOffset) {
+        let labelConfig = {};
+        const {
+           orientation
+       } = this.config();
+        const axisType = this.constructor.type();
+        this.availableSpace({ width, height, padding });
+
+        if (orientation === TOP || orientation === BOTTOM) {
+            labelConfig = spaceSetter(this, { isOffset })[axisType].x();
+        } else {
+            labelConfig = spaceSetter(this, { isOffset })[axisType].y();
+        }
+
+        // Set config
+        this.renderConfig({
+            labels: labelConfig
+        });
+
+        this.setTickConfig();
+
+        return this;
+    }
+
+    getLogicalSpace () {
+        throw new Error(ERROR_MSG.INTERFACE_IMPL);
+    }
+
+    setTickConfig () {
+        throw new Error(ERROR_MSG.INTERFACE_IMPL);
+    }
+
+    getTickSize () {
+        throw new Error(ERROR_MSG.INTERFACE_IMPL);
+    }
+
+    getMinTickDifference () {
+        throw new Error(ERROR_MSG.INTERFACE_IMPL);
+    }
+
+    /**
+     *
+     *
+     *
+     * @memberof SimpleAxis
+     */
+    dependencies () {
+        return this._dependencies;
+    }
+
+    domain (...domain) {
+        if (domain.length) {
+            let domainValue = domain[0];
+            domainValue = getValidDomain(this, domainValue);
+            this.scale().domain(domainValue);
+            this._domain = this.scale().domain();
+            this.setAxisComponentDimensions();
+            this.logicalSpace(null);
+            return this;
+        }
+        return this._domain;
+    }
+
+    resetDomain () {
+        this._domain = [];
+        return this;
+    }
+
+    setAxisComponentDimensions () {
+        this.axisComponentDimensions(getAxisComponentDimensions(this));
     }
 
     getTickFormatter (value) {
@@ -255,22 +266,6 @@ export default class SimpleAxis {
      * @return {Array} range values
      */
     getNearestRange (v1, v2) {
-        let p1;
-        let p2;
-        let extent;
-        const {
-            type
-        } = this.config();
-        const scale = this.scale();
-        const range = scale.range();
-        const reverse = range[0] > range[1];
-
-        if (type === BAND) {
-            extent = scale.invertExtent(v1, v2);
-            p1 = scale(reverse ? extent[extent.length - 1] : extent[0]);
-            p2 = scale(reverse ? extent[0] : extent[extent.length - 1]) + scale.bandwidth();
-            return [p1, p2];
-        }
         return [v1, v2];
     }
 
@@ -305,7 +300,7 @@ export default class SimpleAxis {
      * @param {SVGElement} svg the svg element in which to render the path
      * @memberof SimpleAxis
      */
-    /* istanbul ignore next */render () {
+    render () {
         if (this.mount()) {
             this.setTickConfig();
             renderAxis(this);
@@ -321,15 +316,6 @@ export default class SimpleAxis {
      */
     remove () {
         selectElement(this.mount()).remove();
-        return this;
-    }
-
-    /**
-     *
-     *
-     * @memberof SimpleAxis
-     */
-    unsubscribe () {
         return this;
     }
 

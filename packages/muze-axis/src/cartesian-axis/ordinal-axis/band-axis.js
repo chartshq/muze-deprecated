@@ -1,10 +1,8 @@
 import SimpleAxis from '../simple-axis';
 import { BAND } from '../../enums/scale-type';
-import { DOMAIN } from '../../enums/constants';
 import { TOP, BOTTOM } from '../../enums/axis-orientation';
 import { calculateBandSpace } from './helper';
 import { setOffset, getRotatedSpaces } from '../common-helper';
-import { spaceSetter } from '../space-setter';
 
 export default class BandAxis extends SimpleAxis {
 
@@ -41,57 +39,6 @@ export default class BandAxis extends SimpleAxis {
     }
 
     /**
-     * This method is used to assign a domain to the axis.
-     *
-     * @param {Array} domain the domain of the scale
-     * @memberof SimpleAxis
-     */
-    updateDomainBounds (domain) {
-        let currentDomain = this.domain();
-        if (this.config().domain) {
-            currentDomain = this.config().domain;
-        } else {
-            if (currentDomain.length === 0) {
-                currentDomain = domain;
-            }
-            currentDomain = currentDomain.concat(domain);
-        }
-        this.domain(currentDomain);
-        return this;
-    }
-
-     /**
-     * This method is used to set the space availiable to render
-     * the SimpleCell.
-     *
-     * @param {number} width The width of SimpleCell.
-     * @param {number} height The height of SimpleCell.
-     * @memberof AxisCell
-     */
-    setAvailableSpace (width = 0, height, padding, isOffset) {
-        let labelConfig = {};
-        const {
-           orientation
-       } = this.config();
-
-        this.availableSpace({ width, height, padding });
-
-        if (orientation === TOP || orientation === BOTTOM) {
-            labelConfig = spaceSetter(this, { isOffset }).band.x();
-        } else {
-            labelConfig = spaceSetter(this, { isOffset }).band.y();
-        }
-
-        // Set config
-        this.renderConfig({
-            labels: labelConfig
-        });
-
-        this.setTickConfig();
-        return this;
-    }
-
-    /**
      *
      *
      * @returns
@@ -124,7 +71,7 @@ export default class BandAxis extends SimpleAxis {
         labelManager.setStyle(this._tickLabelStyle);
 
         // Update padding between plots
-        if (typeof padding === 'number' && padding >= 0 && padding <= 1) {
+        if (typeof padding === 'number') {
             this.scale().padding(padding);
         }
 

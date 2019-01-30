@@ -43,39 +43,38 @@ d3.json('../../data/cars.json', (data) => {
     },
     {
         name: 'Year',
-        type: 'dimension',
-        subtype: 'temporal',
-        format: '%Y-%m-%d'
+        type: 'dimension'
+        // subtype: 'temporal',
+        // format: '%Y-%m-%d'
     }
     ];
 
     const rootData = new DataModel(jsonData, schema);
-    const rows = ['Cylinders', 'Horsepower'];
-    const columns = ['Year'];
-    const canvas = env.canvas()
-.rows(rows)
-.columns(columns)
-.height(800)
-.width(500)
-.data(rootData)
-.color('Origin')
-
+    let rows = ['Cylinders', 'Horsepower'],
+        columns = ['Origin', 'Year'];
+    canvas = env.data(rootData).canvas().rows(rows).columns(columns).height(800).color('Origin')
+// {rows}
 .mount('#chart');
 
     setTimeout(() => {
-        canvas
-.config({
-    axes: {
-        y: {
-            tickFormat: val => `${val}$$`
-        },
-        x: {
-            tickFormat: val => `${val}%%`
-        }
-    }
-});
-// .width(400)
-// .height(300);
+        canvas.once('canvas.animationend').then((client) => {
+            const element = document.getElementById('chart');
+            element.classList.add('animateon');
+        });
+        canvas.config({
+            axes: {
+                y: {
+                    tickFormat: function tickFormat (val) {
+                        return `${val}$`;
+                    }
+                },
+                x: {
+                    tickFormat: function tickFormat (val) {
+                        return `${val}%%`;
+                    }
+                }
+            }
+        }).width(400).height(300);
     }, 2000);
 });
 

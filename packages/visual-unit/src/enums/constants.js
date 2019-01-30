@@ -15,3 +15,4 @@ export const PARENT_ALIAS = 'parentAlias';
 export const LAYERS = 'layers';
 export const CACHED_DATA = 'cachedData';
 export const STORE = 'store';
+export const NUMERIC = 'numeric';

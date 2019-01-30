@@ -1,6 +1,5 @@
-import { TOP, BOTTOM, LEFT } from '../../enums/axis-orientation';
 import { getHorizontalAxisSpace, getVerticalAxisSpace } from '../common-helper';
-import { RIGHT } from '../../enums/constants';
+import { TOP, BOTTOM, LEFT, RIGHT } from '../../enums/constants';
 
 /**
      * Calculates the logical space of the axis
