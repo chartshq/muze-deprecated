@@ -56,11 +56,13 @@ d3.json('../data/cars.json', (data) => {
         .rows(['Acceleration']) // Acceleration goes in y axis
         .columns(['Maker']) // Maker goes in x-axis
         .color({
-            field: 'Acceleration',
+            field: 'Acceleration'
             // step: true,
-            stops: [0, 16, 35, 25, 45, 48, 60, 80, 100, 120, 140, 160, 180,
-                200, 22, 25, 30, 50, 70, 100, 110, 130, 150, 200, 301, 300, 405, 506, 700, 706]
+            // stops: [0, 16, 35, 25, 45, 48, 60, 80, 100, 120, 140, 160, 180,
+            //     200, 22, 25, 30, 50, 70, 100, 110, 130, 150, 200, 301, 300, 405, 506, 700, 706]
         })
+        .shape('Name')
+        .size('Maker')
 
         .data(rootData)
         .layers({ // Draw a bar plot, by default stack transform is used
@@ -70,7 +72,7 @@ d3.json('../data/cars.json', (data) => {
         })
         .config({
             legend: {
-                position: 'bottom'
+                position: 'right'
             }
         })
         .width(600)
