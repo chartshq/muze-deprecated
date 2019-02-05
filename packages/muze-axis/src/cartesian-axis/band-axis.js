@@ -108,9 +108,8 @@ export default class BandAxis extends SimpleAxis {
     getLogicalSpace () {
         if (!this.logicalSpace()) {
             this.logicalSpace(calculateBandSpace(this));
-            setOffset(this);
-            this.logicalSpace();
         }
+        setOffset(this);
         return this.logicalSpace();
     }
 

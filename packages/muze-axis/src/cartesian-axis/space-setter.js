@@ -82,16 +82,12 @@ export const spaceSetter = (context, spaceConfig) => {
             x: () => {
                 const tickShifter = tickDimWidth / 2;
 
-                setAxisRange(context, 'y', adjustRange(minDiff,
-                    [tickShifter, availWidth - left - right - tickShifter], domain, orientation),
-                        isOffset ? availHeight : null);
-
-                tickInterval = ((availWidth) / context.getTickValues().length)
+                tickInterval = ((availWidth - left - right - tickShifter) / context.getTickValues().length)
                                      - minTickDistance.width;
 
-                heightForTicks = availHeight - axisNameDimensions.availHeight - tickSize - namePadding;
+                heightForTicks = availHeight - axisNameHeight - tickSize - namePadding;
 
-                if (tickInterval < minTickSpace.width && rotation !== 0) {
+                if (tickInterval < minTickSpace.width - left - right - tickShifter && rotation !== 0) {
                     // set smart ticks and rotation config
                     labelConfig.rotation = labels.rotation === null ? -90 : rotation;
 
@@ -101,10 +97,16 @@ export const spaceSetter = (context, spaceConfig) => {
                         tickInterval = minTickSpace.height;
                         context.renderConfig({ showInnerTicks: false, showOuterTicks: false });
                     }
+                } else {
+                    tickInterval = ((availWidth - tickInterval - left - right) / context.getTickValues().length)
+                                     - minTickDistance.width;
                 }
                 if (availHeight < axisNameHeight) {
                     context.renderConfig({ show: false });
                 }
+                setAxisRange(context, 'y', adjustRange(minDiff,
+                    [tickInterval, availWidth - left - right - tickInterval], domain, orientation),
+                        isOffset ? availHeight : null);
 
                 context.maxTickSpaces({
                     width: tickInterval,
