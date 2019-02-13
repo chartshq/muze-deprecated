@@ -1,4 +1,4 @@
-/* eslint disable */
+/* eslint-disable */
 const env = muze();
 const DataModel = muze.DataModel;
 
@@ -31,7 +31,8 @@ d3.json('../../data/cars.json', (data) => {
     },
     {
         name: 'Acceleration',
-        type: 'measure'
+        type: 'measure',
+        numberFormat: (val) => "$" + val 
     },
     {
         name: 'Origin',
@@ -52,29 +53,29 @@ d3.json('../../data/cars.json', (data) => {
     const rootData = new DataModel(jsonData, schema);
     let rows = ['Cylinders', 'Horsepower'],
         columns = ['Origin', 'Year'];
-    canvas = env.data(rootData).canvas().rows(rows).columns(columns).height(800).color('Origin')
+    canvas = env.data(rootData).canvas().rows(rows).columns(columns).height(800).width(1400).color('Origin')
 // {rows}
 .mount('#chart');
 
-    setTimeout(() => {
-        canvas.once('canvas.animationend').then((client) => {
-            const element = document.getElementById('chart');
-            element.classList.add('animateon');
-        });
-        canvas.config({
-            axes: {
-                y: {
-                    tickFormat: function tickFormat (val) {
-                        return `${val}$`;
-                    }
-                },
-                x: {
-                    tickFormat: function tickFormat (val) {
-                        return `${val}%%`;
-                    }
-                }
-            }
-        }).width(400).height(300);
-    }, 2000);
+    // setTimeout(() => {
+    //     canvas.once('canvas.animationend').then((client) => {
+    //         const element = document.getElementById('chart');
+    //         element.classList.add('animateon');
+    //     });
+    //     canvas.config({
+    //         axes: {
+    //             y: {
+    //                 tickFormat: function tickFormat (val) {
+    //                     return `${val}$`;
+    //                 }
+    //             },
+    //             x: {
+    //                 tickFormat: function tickFormat (val) {
+    //                     return `${val}%%`;
+    //                 }
+    //             }
+    //         }
+    //     }).width(400).height(300);
+    // }, 2000);
 });
 

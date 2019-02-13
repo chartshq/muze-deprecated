@@ -3,7 +3,7 @@
  * This file declares a class that is used to render an axis to add  meaning to
  * plots.
  */
-import { getSymbol, generateGetterSetters, mergeRecursive } from 'muze-utils';
+import { getSymbol, generateGetterSetters, mergeRecursive, InvalidAwareTypes } from 'muze-utils';
 import { createScale } from '../../scale-creator';
 import { DEFAULT_CONFIG } from './defaults';
 import { SHAPE } from '../../enums/constants';
@@ -69,8 +69,8 @@ export default class ShapeAxis extends RetinalAxis {
      *
      * @memberof ShapeAxis
      */
-    getShape (domainVal) {
-        if (!this.scale() || !this.domain() || !domainVal) {
+    getShape (value) {
+        if (!this.scale() || !this.domain() || !value || value instanceof InvalidAwareTypes) {
             return this.config().value;
         }
 

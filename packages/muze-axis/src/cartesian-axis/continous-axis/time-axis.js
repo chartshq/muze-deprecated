@@ -135,16 +135,20 @@ export default class TimeAxis extends ContinousAxis {
         return this.scale().ticks();
     }
 
-    getTickFormatter (value) {
+    formatTickValue (val) {
+        return this.scale().tickFormat()(val);
+    }
+
+    sanitizeTickFormatter (value) {
         const { tickFormat } = value;
 
         if (tickFormat) {
             return (ticks) => {
                 const rawTicks = ticks.map(t => t.getTime());
-                return (val, i) => tickFormat(val, val.getTime(), i, rawTicks);
+                return (val, i) => tickFormat(this.formatTickValue(val), val.getTime(), i, rawTicks);
             };
         }
-        return () => text => this.scale().tickFormat()(text);
+        return () => val => this.formatTickValue(val);
     }
 
     /**
@@ -193,10 +197,10 @@ export default class TimeAxis extends ContinousAxis {
      *
      * @memberof SimpleAxis
      */
-    domain (domain) {
-        if (domain) {
-            domain = getValidDomain(this, domain);
-            setContinousAxisDomain(this, domain);
+    domain (...domain) {
+        if (domain.length) {
+            const domainValue = getValidDomain(this, domain[0]);
+            setContinousAxisDomain(this, domainValue);
             this.setAxisComponentDimensions();
             this.logicalSpace(null);
             return this;

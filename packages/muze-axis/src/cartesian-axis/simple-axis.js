@@ -160,8 +160,7 @@ export default class SimpleAxis {
 
     domain (...domain) {
         if (domain.length) {
-            let domainValue = domain[0];
-            domainValue = getValidDomain(this, domainValue);
+            const domainValue = getValidDomain(this, domain[0]);
             this.scale().domain(domainValue);
             this._domain = this.scale().domain();
             this.setAxisComponentDimensions();
@@ -180,12 +179,13 @@ export default class SimpleAxis {
         this.axisComponentDimensions(getAxisComponentDimensions(this));
     }
 
-    getTickFormatter (value) {
+    sanitizeTickFormatter (value) {
         const { tickFormat, numberFormat } = value;
 
         if (tickFormat) {
             return ticks => (val, i) => tickFormat(numberFormat(val), val, i, ticks);
         }
+
         return () => val => numberFormat(val);
     }
 
@@ -254,19 +254,23 @@ export default class SimpleAxis {
      * @param {number} value Value from the range.
      * @return {number} Value
      */
-    invert (...value) {
-        const values = value.map(d => this.scale().invert(d)) || [];
-        return value.length === 1 ? values[0] : values;
+    invert (value) {
+        return this.scale().invert(value);
     }
 
     /**
      * Gets the nearest range value from the given range values.
      * @param {number} v1 Start range value
      * @param {number} v2 End range value
+     *
      * @return {Array} range values
      */
     getNearestRange (v1, v2) {
         return [v1, v2];
+    }
+
+    invertExtent (v1, v2) {
+        return [this.invert(v1), this.invert(v2)];
     }
 
     getFormattedTickValues (tickValues) {

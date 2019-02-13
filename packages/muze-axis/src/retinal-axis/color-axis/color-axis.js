@@ -136,7 +136,6 @@ export default class ColorAxis extends RetinalAxis {
                 const col = color.substring(color.indexOf('(') + 1, color.lastIndexOf(')')).split(/,\s*/);
                 return rgbToHsv(...col);
             }
-            return [...color];
         }
         return [...this.config().value];
     }
