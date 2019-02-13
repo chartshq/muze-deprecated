@@ -21,6 +21,57 @@ export const getRotatedSpaces = (rotation = 0, width, height) => {
     return { width: rotatedWidth, height: rotatedHeight };
 };
 
+export const getAxisComponentDimensions = (context) => {
+    let largestTick = '';
+    let largestTickDimensions = { width: 0, height: 0 };
+    let smartTick = {};
+    let axisTicks;
+    const allTickDimensions = [];
+    const scale = context.scale();
+    const { showAxisName } = context.renderConfig();
+    const { tickValues, name } = context.config();
+    const { labelManager } = context.dependencies();
+    const labelFunc = scale.ticks || scale.quantile || scale.domain;
+
+    // set the style on the shared label manager instance
+    labelManager.setStyle(context._tickLabelStyle);
+
+    // get the values along the domain
+    axisTicks = tickValues || labelFunc();
+
+    // Get the tick labels
+    axisTicks = axisTicks.map((originalLabel, i) => {
+        const label = context.getFormattedText(originalLabel, i, axisTicks);
+
+    // convert to string for quant values
+        const tickDimensions = labelManager.getOriSize(label);
+
+    // Get spaces for all labels
+        allTickDimensions.push(tickDimensions);
+
+    // Getting largest label
+        if (tickDimensions.width > largestTickDimensions.width) {
+            largestTick = label;
+            smartTick = context.smartTicks() ? context.smartTicks()[i] : {};
+            largestTickDimensions = tickDimensions;
+        }
+        return label;
+    });
+
+    labelManager.setStyle(context._axisNameStyle);
+    const axisNameDimensions = showAxisName ? labelManager.getOriSize(name) : { width: 0, height: 0 };
+
+    return {
+        axisNameDimensions,
+        largestTick,
+        largestTickDimensions,
+        allTickDimensions,
+        axisTicks,
+        smartTick,
+        tickSize: context.getTickSize()
+    };
+};
+
 export const getTickFormatter = (tickFormat, numberFormat) => {
     if (tickFormat) {
         return ticks => (val, i) => tickFormat(numberFormat(val), i, ticks);
@@ -76,55 +127,44 @@ export const getTickLabelInfo = (context) => {
     return { largestLabel, largestLabelDim: labelProps, axisTickLabels, allLabelLengths, smartTick };
 };
 
-/**
- *
- *
- * @returns
- * @memberof SimpleAxis
- */
 export const computeAxisDimensions = (context) => {
-    let tickLabelDim = {};
+    let tickDimensions = {};
+    const { labels } = context.renderConfig();
+    const { smartTicks, rotation } = labels;
     const {
-        name,
-        labels,
-        tickValues
-    } = context.config();
-    const angle = ((labels.smartTicks) ? 0 : labels.rotation) * Math.PI / 180;
-    const { labelManager } = context.dependencies();
-    const {
-        largestLabelDim,
-        axisTickLabels,
+        largestTickDimensions,
+        axisTicks,
         smartTick,
-        allLabelLengths
-    } = getTickLabelInfo(context);
-    const { height: labelHeight, width: labelWidth } = largestLabelDim;
+        axisNameDimensions,
+        allTickDimensions,
+        tickSize
+    } = getAxisComponentDimensions(context);
+    const { height: labelHeight, width: labelWidth } = largestTickDimensions;
+
     // get the domain of axis
     const domain = context.domain();
+    // const angle = ((rotation || 0) * Math.PI) / 180;
 
     if (domain.length === 0) {
         return null;
     }
-    if (context._rotationLock === false) {
-        context.setRotationConfig(tickValues || axisTickLabels, largestLabelDim.width);
-        context._rotationLock = false;
-    }
-    if (labels.smartTicks) {
-        tickLabelDim = smartTick;
+    if (smartTicks) {
+        tickDimensions = smartTick;
     } else {
-        tickLabelDim = {
-            width: Math.abs(labelHeight * Math.sin(angle)) + Math.abs(labelWidth * Math.cos(angle)),
-            height: Math.abs(labelWidth * Math.sin(angle)) + Math.abs(labelHeight * Math.cos(angle))
-        };
+        tickDimensions = { width: labelWidth, height: labelHeight };
     }
+    tickDimensions = getRotatedSpaces(rotation, tickDimensions.width, tickDimensions.height);
 
-    labelManager.setStyle(context._axisNameStyle);
+    if (tickSize === 0) {
+        tickDimensions = { width: 0, height: 0 };
+    }
     return {
-        tickSize: context.getTickSize(),
-        tickLabelDim,
-        axisLabelDim: labelManager.getOriSize(name),
-        largestLabelDim,
-        axisTickLabels,
-        allTickDimensions: allLabelLengths
+        allTickDimensions,
+        tickSize,
+        tickDimensions,
+        axisNameDimensions,
+        largestTickDimensions,
+        axisTicks
     };
 };
 
@@ -177,31 +217,27 @@ export const registerChangeListeners = (context) => {
  * @param {*} axisDimensions
  * @param {*} config
  * @param {*} range
- * @returns
+ *
  */
-export const getHorizontalAxisSpace = (context, axisDimensions, config, range) => {
+export const getHorizontalAxisSpace = (context, axisDimensions, range) => {
     let width;
     let height;
-    const {
-        tickSize,
-        tickLabelDim,
-        axisLabelDim
-    } = axisDimensions;
-    const {
-        axisNamePadding,
-        showAxisName,
-        tickValues
-   } = config;
     const domain = context.domain();
-    const { height: axisDimHeight } = axisLabelDim;
-    const { height: tickDimHeight, width: tickDimWidth } = tickLabelDim;
+    const { tickSize, tickDimensions, axisNameDimensions } = axisDimensions;
+    const { axisNamePadding, tickValues } = context.config();
+    const { showAxisName } = context.renderConfig();
+    const { height: axisDimHeight } = axisNameDimensions;
+    const { height: tickDimHeight, width: tickDimWidth } = tickDimensions;
 
     width = range && range.length ? range[1] - range[0] : 0;
 
     height = 0;
     if (tickValues) {
         const minTickDiff = context.getMinTickDifference();
-        const [min, max] = [Math.min(...tickValues, ...domain), Math.max(...tickValues, ...domain)];
+        const [min, max] = [
+            Math.min(...tickValues, ...domain),
+            Math.max(...tickValues, ...domain)
+        ];
 
         width = ((max - min) / Math.abs(minTickDiff)) * (tickDimWidth + context._minTickDistance.width);
     }
@@ -210,7 +246,8 @@ export const getHorizontalAxisSpace = (context, axisDimensions, config, range) =
     } else {
         height = tickDimHeight;
     }
-    height += (showAxisName ? (axisDimHeight + axisNamePadding) : 0) + tickSize;
+    height += (showAxisName ? axisDimHeight + axisNamePadding : 0) + tickSize;
+
     return {
         width,
         height
@@ -223,89 +260,34 @@ export const getHorizontalAxisSpace = (context, axisDimensions, config, range) =
  * @param {*} axisDimensions
  * @param {*} config
  * @param {*} range
- * @returns
+ *
  */
-export const getVerticalAxisSpace = (context, axisDimensions, config) => {
+export const getVerticalAxisSpace = (context, axisDimensions) => {
     let height;
     let width;
-    const {
-        tickSize,
-        tickLabelDim,
-        axisLabelDim
-    } = axisDimensions;
-    const {
-        axisNamePadding,
-        showAxisName,
-        tickValues
-   } = config;
     const domain = context.domain();
-    const { height: axisDimHeight } = axisLabelDim;
-    const { height: tickDimHeight, width: tickDimWidth } = tickLabelDim;
+    const { tickSize, tickDimensions, axisNameDimensions } = axisDimensions;
+    const { axisNamePadding, tickValues } = context.config();
+    const { showAxisName } = context.renderConfig();
+    const { height: axisDimHeight } = axisNameDimensions;
+    const { height: tickDimHeight, width: tickDimWidth } = tickDimensions;
 
     height = 0;
     width = tickDimWidth;
     if (tickValues) {
         const minTickDiff = context.getMinTickDifference();
-        const [min, max] = [Math.min(...tickValues, ...domain), Math.max(...tickValues, ...domain)];
+        const [min, max] = [
+            Math.min(...tickValues, ...domain),
+            Math.max(...tickValues, ...domain)
+        ];
 
-        height = ((max - min) / Math.abs(minTickDiff)) * (tickDimHeight);
+        height = ((max - min) / Math.abs(minTickDiff)) * tickDimHeight;
     }
     width += (showAxisName ? axisDimHeight : 0) + tickSize + axisNamePadding;
 
     return {
         height,
         width
-    };
-};
-
-export const getAxisComponentDimensions = (context) => {
-    let largestTick = '';
-    let largestTickDimensions = { width: 0, height: 0 };
-    let smartTick = {};
-    let axisTicks;
-    const allTickDimensions = [];
-    const scale = context.scale();
-    const { showAxisName } = context.renderConfig();
-    const { tickValues, name } = context.config();
-    const { labelManager } = context.dependencies();
-    const labelFunc = scale.ticks || scale.quantile || scale.domain;
-
-    // set the style on the shared label manager instance
-    labelManager.setStyle(context._tickLabelStyle);
-
-    // get the values along the domain
-    axisTicks = tickValues || labelFunc();
-
-    // Get the tick labels
-    axisTicks = axisTicks.map((originalLabel, i) => {
-        const label = context.getFormattedText(originalLabel, i, axisTicks);
-
-    // convert to string for quant values
-        const tickDimensions = labelManager.getOriSize(label);
-
-    // Get spaces for all labels
-        allTickDimensions.push(tickDimensions);
-
-    // Getting largest label
-        if (tickDimensions.width > largestTickDimensions.width) {
-            largestTick = label;
-            smartTick = context.smartTicks() ? context.smartTicks()[i] : {};
-            largestTickDimensions = tickDimensions;
-        }
-        return label;
-    });
-
-    labelManager.setStyle(context._axisNameStyle);
-    const axisNameDimensions = showAxisName ? labelManager.getOriSize(name) : { width: 0, height: 0 };
-
-    return {
-        axisNameDimensions,
-        largestTick,
-        largestTickDimensions,
-        allTickDimensions,
-        axisTicks,
-        smartTick,
-        tickSize: context.getTickSize()
     };
 };
 

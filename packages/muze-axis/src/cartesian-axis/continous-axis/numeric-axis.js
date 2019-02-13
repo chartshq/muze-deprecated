@@ -101,7 +101,8 @@ export default class NumericAxis extends ContinousAxis {
      */
     setTickConfig () {
         const {
-            tickValues
+            tickValues,
+            tickFormat
         } = this.config();
         const {
             showInnerTicks
@@ -117,8 +118,21 @@ export default class NumericAxis extends ContinousAxis {
             tickValues instanceof Array && this.axis().tickValues(tickValues);
             return this;
         }
-        axis.tickValues(this.getTickValues());
+        const newTickValues = this.getTickValues();
 
+        axis.tickValues(newTickValues);
+        const smartLabel = this.dependencies().labelManager;
+        smartLabel.setStyle(this._tickLabelStyle);
+
+        const smartTicks = newTickValues.map((e) => {
+            const text = tickFormat(e);
+            const tickSpace = smartLabel.getOriSize(text);
+
+            tickSpace.text = text;
+            return tickSpace;
+        });
+
+        this.smartTicks(smartTicks);
         return this;
     }
 

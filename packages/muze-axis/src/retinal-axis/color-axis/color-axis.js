@@ -3,7 +3,7 @@
  * This file declares a class that is used to render an axis to add  meaning to
  * plots.
  */
-import { generateGetterSetters, rgbToHsv } from 'muze-utils';
+import { getUniqueId, generateGetterSetters, rgbToHsv } from 'muze-utils';
 import { createScale, getScheme, getSchemeType } from '../../scale-creator';
 import { CONTINOUS, DISCRETE, COLOR } from '../../enums/constants';
 import { strategyGetter } from './color-strategy';
@@ -38,6 +38,7 @@ export default class ColorAxis extends RetinalAxis {
         this.setStrategy(this._domainType, this._rangeType, this._schemeType);
         this._scale = this.createScale();
 
+        this._id = getUniqueId();
         this.updateDomain(config.domain);
     }
 
@@ -132,9 +133,12 @@ export default class ColorAxis extends RetinalAxis {
             const range = scale.range ? scale.range() : null;
             const color = this.strategy().value(range)(domainVal, scale, this.domain(), this.uniqueValues());
 
-            if (typeof color === 'string') {
-                const col = color.substring(color.indexOf('(') + 1, color.lastIndexOf(')')).split(/,\s*/);
-                return rgbToHsv(...col);
+            if (color) {
+                if (typeof color === 'string') {
+                    const col = color.substring(color.indexOf('(') + 1, color.lastIndexOf(')')).split(/,\s*/);
+                    return rgbToHsv(...col);
+                }
+                return [...color];
             }
         }
         return [...this.config().value];
@@ -162,6 +166,22 @@ export default class ColorAxis extends RetinalAxis {
         return this;
     }
 
+     /**
+     * This method returns an object that can be used to
+     * reconstruct this instance.
+     *
+     * @return {Object} the serializable props of axis
+     * @memberof ShapeAxis
+     */
+    serialize () {
+        return {
+            type: this.constructor.type(),
+            scale: this.scale(),
+            domain: this.domain(),
+            config: this.config()
+        };
+    }
+
     transformColor (colorArray, transformationArray) {
         const h = colorArray[0] * 360;
         const s = colorArray[1] * 100;
@@ -173,5 +193,13 @@ export default class ColorAxis extends RetinalAxis {
         const newA = a + transformationArray[3] || 0;
 
         return { color: `hsla(${newH},${newS}%,${newL}%,${newA})`, hsla: [newH / 360, newS / 100, newL / 100, newA] };
+    }
+
+     /**
+     * Returns the id of the axis.
+     * @return {string} Unique identifier of the axis.
+     */
+    id () {
+        return this._id;
     }
 }

@@ -7,41 +7,45 @@ import { getHorizontalAxisSpace, getVerticalAxisSpace } from '../common-helper';
  */
 export const calculateBandSpace = (context) => {
     const range = context.range();
-    const config = context.config();
-    const {
-            orientation,
-            show
-        } = config;
     const axisDimensions = context.getAxisDimensions();
-    const {
-            largestLabelDim,
-            axisTickLabels
-        } = axisDimensions;
-    const { height: largestDimHeight, width: largestDimWidth } = largestLabelDim;
-
+    const { orientation } = context.config();
+    const { show } = context.renderConfig();
+    const { largestTickDimensions, axisTicks, allTickDimensions } = axisDimensions;
+    const { height: largestDimHeight } = largestTickDimensions;
+    const minTickWidth = context._minTickDistance.width;
     if (orientation === TOP || orientation === BOTTOM) {
-        let { width, height } = getHorizontalAxisSpace(context, axisDimensions, config, range);
+        let {
+            width,
+            height
+        } = getHorizontalAxisSpace(context, axisDimensions, range);
+
         if (!width || width === 0) {
-            width = axisTickLabels.length * (Math.min(largestDimWidth + context._minTickDistance.width,
-                             largestDimHeight + context._minTickDistance.width));
+            width = allTickDimensions.reduce((t, n) =>
+                t + Math.min(n.width, n.height) + minTickWidth, 0);
         }
         if (show === false) {
             height = 0;
+            width = 0;
         }
+
         return {
             width,
             height
         };
     }
 
-    let { width, height } = getVerticalAxisSpace(context, axisDimensions, config, range);
+    let {
+        width,
+        height
+    } = getVerticalAxisSpace(context, axisDimensions, range);
 
     if (!height || height === 0) {
-        height = axisTickLabels.length * (largestDimHeight + largestDimHeight / 2) + largestDimHeight;
+        height = axisTicks.length * (largestDimHeight + context._minTickDistance.height) + largestDimHeight;
     }
     if (show === false) {
         width = 0;
     }
+
     return {
         width,
         height

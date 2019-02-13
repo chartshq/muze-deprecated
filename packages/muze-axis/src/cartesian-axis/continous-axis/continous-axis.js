@@ -31,7 +31,6 @@ export default class ContinousAxis extends SimpleAxis {
         if (!this.logicalSpace()) {
             this.logicalSpace(calculateContinousSpace(this));
             setOffset(this);
-            this.logicalSpace();
         }
         return this.logicalSpace();
     }

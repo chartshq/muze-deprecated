@@ -2,22 +2,15 @@ import { getHorizontalAxisSpace, getVerticalAxisSpace } from '../common-helper';
 import { TOP, BOTTOM, LEFT, RIGHT } from '../../enums/constants';
 
 /**
-     * Calculates the logical space of the axis
-     * @return {Object} Width and height occupied by the axis.
-     */
+ * Calculates the logical space of the axis
+ * @return {Object} Width and height occupied by the axis.
+ */
 export const calculateContinousSpace = (context) => {
     const range = context.range();
-    const config = context.config();
     const axisDimensions = context.getAxisDimensions();
-
-    const {
-        orientation,
-        show,
-        showAxisName
-    } = config;
-    const {
-            axisLabelDim
-        } = axisDimensions;
+    const { orientation } = context.config();
+    const { show, showAxisName } = context.renderConfig();
+    const { axisNameDimensions } = axisDimensions;
 
     if (show === false) {
         return {
@@ -26,21 +19,26 @@ export const calculateContinousSpace = (context) => {
         };
     }
 
-    const { width: axisDimWidth } = axisLabelDim;
+    const { width: axisNameWidth } = axisNameDimensions;
 
     if (orientation === TOP || orientation === BOTTOM) {
-        const { width, height } = getHorizontalAxisSpace(context, axisDimensions, config);
-        const axisWidth = Math.max(width, axisDimWidth);
+        const {
+            width,
+            height
+        } = getHorizontalAxisSpace(context, axisDimensions, range);
+        const axisWidth = Math.max(width, axisNameWidth);
 
         return {
             width: axisWidth,
             height
         };
     }
+    const {
+        width,
+        height
+    } = getVerticalAxisSpace(context, axisDimensions, range);
 
-    const { width, height } = getVerticalAxisSpace(context, axisDimensions, config, range);
-
-    const effHeight = Math.max(height, showAxisName ? axisDimWidth : 0);
+    const effHeight = Math.max(height, showAxisName ? axisNameWidth : 0);
 
     return {
         width,
