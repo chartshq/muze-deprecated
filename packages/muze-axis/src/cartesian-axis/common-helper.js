@@ -1,3 +1,4 @@
+import { defaultValue } from 'muze-utils';
 import { TOP, LEFT, BOTTOM } from '../enums/axis-orientation';
 import { LOG } from '../enums/scale-type';
 
@@ -339,21 +340,6 @@ export const calculateBandSpace = (context) => {
 };
 
 /**
- * Checks if any of the properties have changed between two objects
- * @param {Object} obj first object
- * @param {Object} obj1 second object
- * @param {Array} properties properties to be compared between two objects
- *
- * @return {Boolean} boolean value
- */
-export const hasAxesConfigChanged = (obj = {}, obj1 = {}, properties) => {
-    if (!Object.keys(obj).length || !Object.keys(obj1).length) {
-        return false;
-    }
-    return properties.some(key => obj[key] !== obj1[key]);
-};
-
-/**
  * Overwrites domain with user defined domain (if present)
  * @param {Object} context reference to current axes
  * @param {Array} domain default domain
@@ -367,6 +353,29 @@ export const getValidDomain = (context, domain) => {
         domain = userDom;
     }
 
-    return domain;
+    return defaultValue(domain, []);
 };
 
+export const setContinousAxisDomain = (context, domain) => {
+    const { nice } = context.config();
+    const scale = context.scale.bind(context);
+
+    scale().domain(domain);
+    nice && scale().nice();
+    context._domain = scale().domain();
+};
+
+/**
+ * Checks if any of the properties have changed between two objects
+ * @param {Object} obj first object
+ * @param {Object} obj1 second object
+ * @param {Array} properties properties to be compared between two objects
+ *
+ * @return {Boolean} boolean value
+ */
+export const hasAxesConfigChanged = (obj = {}, obj1 = {}, properties) => {
+    if (!Object.keys(obj).length || !Object.keys(obj1).length) {
+        return false;
+    }
+    return properties.some(key => obj[key] !== obj1[key]);
+};

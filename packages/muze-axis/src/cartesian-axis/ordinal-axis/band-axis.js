@@ -104,23 +104,6 @@ export default class BandAxis extends SimpleAxis {
         return this.logicalSpace();
     }
 
-     /**
-     * Gets the nearest range value from the given range values.
-     * @param {number} rangeStart Start range value
-     * @param {number} rangeEnd End range value
-     * @return {Array} range values
-     */
-    getNearestRange (rangeStart, rangeEnd) {
-        const scale = this.scale();
-        const range = scale.range();
-        const reverse = range[0] > range[1];
-
-        const extent = scale.invertExtent(rangeStart, rangeEnd);
-        const p1 = scale(reverse ? extent[extent.length - 1] : extent[0]);
-        const p2 = scale(reverse ? extent[0] : extent[extent.length - 1]) + scale.bandwidth();
-        return [p1, p2];
-    }
-
     /**
      *
      *

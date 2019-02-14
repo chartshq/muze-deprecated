@@ -56,8 +56,14 @@ export const getNumberOfTicks = (availableSpace, labelDim, axis, axisInstance) =
         numberOfValues = Math.floor(availableSpace / (labelDim * 1.5));
     }
 
-    numberOfValues = Math.min(numberOfTicks, Math.max(1, numberOfValues));
-    return axis.scale().ticks(numberOfValues);
+    numberOfValues = Math.min(numberOfTicks, Math.max(2, numberOfValues));
+    let tickValues = axis.scale().ticks(numberOfValues);
+
+    if (numberOfValues === 2) {
+        tickValues = axis.scale().ticks(10);
+        tickValues = [tickValues[0], tickValues[tickValues.length - 1]];
+    }
+    return tickValues;
 };
 
 export const setContinousAxisDomain = (context, domain) => {

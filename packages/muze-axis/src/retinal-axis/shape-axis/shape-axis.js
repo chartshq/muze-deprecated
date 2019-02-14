@@ -75,10 +75,10 @@ export default class ShapeAxis extends RetinalAxis {
         }
 
         if (this._generatedShapes) {
-            return this._generatedShapes[domainVal];
+            return this._generatedShapes[value];
         }
 
-        const shapeType = this.scale()(domainVal);
+        const shapeType = this.scale()(value);
         if (shapeType === 'string') {
             return getSymbol(shapeType);
         }
