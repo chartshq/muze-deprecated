@@ -74,15 +74,14 @@ d3.json('../../data/cars.json', (data) => {
     let rootData = new DataModel(jsonData, schema)
     // .select(fields=>fields.Year.value === '1972-01-01');
 
-    var rows = ['Acceleration', 'Horsepower', 'Weight_in_lbs'],
+
+    var rows = ['Weight_in_lbs'],
             columns = rows.reverse();
-        const canvas = env.canvas()
-            .rows([['Origin', 'Cylinders', 'Weight_in_lbs']])
-            .columns(columns).data(rootData).height(400).width(400)
-            .title('The car acceleration respective to origin', { position: 'bottom', align: 'center' })
-            .color({
-                field: 'Origin'
-            }).mount('#chart').once('canvas.animationend').then(function (client) {
+        const canvas = env.canvas().columns(['Maker', 'Cylinders', 'Acceleration'])
+        .rows(columns).data(rootData).height(600).width(900)
+        .title('The car acceleration respective to origin', { position: 'bottom', align: 'center' })
+        .mount('#chart');
+        canvas.once('canvas.animationend').then(function (client) {
             var element = document.getElementById('chart');
             element.classList.add('animateon');
         });
