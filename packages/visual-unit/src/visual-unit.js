@@ -156,6 +156,20 @@ export default class VisualUnit {
         };
     }
 
+    /**
+     * Generates payload for hover interaction and fires callback
+     * @param {Object} args arguments
+     * @param {Object} firebolt Firebolt instance
+     * @param {Function} callback callback function
+     * @return {Function} result of callback function
+     */
+    generateHoverPayload (args, firebolt, callback) {
+        const tooltipConf = this.config().interaction.tooltip;
+        const mode = tooltipConf.mode;
+
+        return callback(args, event, firebolt, mode);
+    }
+
     store (...params) {
         if (params.length) {
             const store = this._store = params[0];
@@ -325,6 +339,7 @@ export default class VisualUnit {
         const width = this.width();
         const height = this.height();
         const { el, dimensions } = this.parentContainerInf();
+
         return {
             htmlContainer: this.mount(),
             svgContainer: rootSvg,

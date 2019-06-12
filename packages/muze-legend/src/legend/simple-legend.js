@@ -14,7 +14,8 @@ import { actionBehaviourMap } from '../firebolt/action-behaviour-map';
 import { physicalActions } from '../firebolt/physical';
 import * as sideEffects from '../firebolt/side-effects';
 import { behaviourEffectMap } from '../firebolt/behaviour-effect-map';
-import { VALUE, PATH, RIGHT, LEFT, TOP, BOTTOM } from '../enums/constants';
+import { marginPositionMap } from './margin-position-map';
+import { VALUE, PATH, MEASURE } from '../enums/constants';
 import { PROPS } from './props';
 import { DEFAULT_MEASUREMENT, DEFAULT_CONFIG, LEGEND_TITLE } from './defaults';
 import { getItemMeasures, titleCreator, computeItemSpaces } from './legend-helper';
@@ -272,20 +273,8 @@ export default class SimpleLegend {
             border
         } = this.measurement();
         const legendContainer = makeElement(selectElement(this.mount()), 'div', [1], `${classPrefix}-legend-box`);
-        let marginPosition;
-        switch (position) {
-        case TOP:
-            marginPosition = `margin-${BOTTOM}`;
-            break;
-        case LEFT:
-            marginPosition = `margin-${RIGHT}`;
-            break;
-        case BOTTOM:
-            marginPosition = `margin-${TOP}`;
-            break;
-        default:
-            marginPosition = `margin-${LEFT}`;
-        }
+        const marginPosition = marginPositionMap(position);
+
         legendContainer.classed(`${classPrefix}-legend-box-${this._id}`, true);
         legendContainer.style('float', 'left');
         // set height and width
@@ -310,7 +299,7 @@ export default class SimpleLegend {
     getCriteriaFromData (data) {
         const fieldName = this.fieldName();
         const type = this.metaData().getData().schema[0].type;
-        if (type === 'measure') {
+        if (type === MEASURE) {
             return {
                 [fieldName]: data.range
             };
