@@ -1,3 +1,7 @@
+# Deprecated, please visit new [Muze](https://github.com/chartshq/muze)
+<br />
+<br />
+
 <h3 align="center">
   <br />
   <br />
